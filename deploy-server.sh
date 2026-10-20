@@ -3,6 +3,7 @@
 #   bash <(curl -fsSL https://raw.githubusercontent.com/KubeSpoke/KubeSpoke/master/deploy-server.sh)
 # 可用环境变量覆盖：NAMESPACE / IMAGE / SERVICE_TYPE / NODE_PORT / INGRESS_HOST / INGRESS_CLASS
 #                      / INGRESS_TLS / INGRESS_TLS_SECRET / CERT_MANAGER_ISSUER / CERT_MANAGER_NS_ISSUER
+#                      / HOST_PATH（控制台账号落在节点上的这个目录）
 # 在终端里直接跑会先问用 NodePort 还是 nginx Ingress，选 Ingress 再问域名、是否启用 TLS、
 # 证书是 cert-manager 自动签发还是已有 Secret；
 # 用 curl | bash 管道跑不会弹问题，要走 Ingress 就自己带 INGRESS_HOST=xxx
@@ -13,6 +14,9 @@ NAMESPACE="${NAMESPACE:-kubespoke}"
 IMAGE="${IMAGE:-crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:latest}"
 INGRESS_HOST="${INGRESS_HOST:-}"
 INGRESS_CLASS="${INGRESS_CLASS:-nginx}"
+# 控制台账号是 SQLite（/app/App_Data/kubespoke.db），不落卷就随 pod 重建消失。
+# 用 hostPath 而不是 PVC：单副本场景不需要存储编排，代价是换节点即丢。
+HOST_PATH="${HOST_PATH:-/data/kubespoke}"
 
 # 有终端才交互式询问；curl | bash 这种管道执行 stdin 不是终端，只能靠环境变量传值
 if [ -t 0 ] && [ -z "${INGRESS_HOST}" ]; then
@@ -112,6 +116,10 @@ metadata:
     app: kubespoke-server
 spec:
   replicas: 1
+  # RollingUpdate 会先起新 pod，两个 pod 抢同一个 hostPath 目录写同一个库；
+  # Recreate 先把旧 pod 停干净。
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: kubespoke-server
@@ -125,6 +133,14 @@ spec:
           image: ${IMAGE}
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/App_Data
+      volumes:
+        - name: app-data
+          hostPath:
+            path: ${HOST_PATH}
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

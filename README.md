@@ -29,7 +29,9 @@ docker run -d --name kubespoke-server -p 8080:80 \
 bash <(curl -fsSL https://raw.githubusercontent.com/KubeSpoke/KubeSpoke/master/deploy-server.sh)
 ```
 
-不想被问（比如 `curl | bash` 管道里没有终端），直接给环境变量：`NAMESPACE`、`IMAGE`、`SERVICE_TYPE`、`NODE_PORT`、`INGRESS_HOST`、`INGRESS_CLASS`、`INGRESS_TLS`、`INGRESS_TLS_SECRET`、`CERT_MANAGER_ISSUER`。
+不想被问（比如 `curl | bash` 管道里没有终端），直接给环境变量：`NAMESPACE`、`IMAGE`、`SERVICE_TYPE`、`NODE_PORT`、`INGRESS_HOST`、`INGRESS_CLASS`、`INGRESS_TLS`、`INGRESS_TLS_SECRET`、`CERT_MANAGER_ISSUER`、`HOST_PATH`。
+
+控制台账号存在 SQLite（容器内 `/app/App_Data`），脚本默认挂 hostPath 到节点的 `/data/kubespoke`（`HOST_PATH` 可改），所以 pod 重建后口令还在；代价是这份数据跟着节点走，换节点即丢。
 
 ```bash
 INGRESS_HOST=kubespoke.example.com INGRESS_TLS=true CERT_MANAGER_ISSUER=letsencrypt-prod \
