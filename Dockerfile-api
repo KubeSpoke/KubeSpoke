@@ -1,0 +1,35 @@
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+WORKDIR /app
+# 基础镜像自带 ASPNETCORE_HTTP_PORTS=8080，其优先级高于 ASPNETCORE_URLS，
+# 不显式清空就会监听 8080，与 deploy-server.sh 里 targetPort: 80 对不上
+ENV ASPNETCORE_HTTP_PORTS=
+ENV ASPNETCORE_HTTPS_PORTS=
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+EXPOSE 443
+ENV TZ=Asia/Shanghai
+
+FROM node:24-alpine AS web
+WORKDIR /src/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+# vite.config 里 outDir 指向 ../KubeSpoke.Server/wwwroot，产物落在那儿再交给 dotnet publish
+RUN npm run build
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY NuGet.Config ./
+COPY ["KubeSpoke.Server/KubeSpoke.Server.csproj", "KubeSpoke.Server/"]
+COPY ["KubeSpoke.Contracts/KubeSpoke.Contracts.csproj", "KubeSpoke.Contracts/"]
+RUN dotnet restore "KubeSpoke.Server/KubeSpoke.Server.csproj"
+COPY . .
+COPY --from=web /src/KubeSpoke.Server/wwwroot/ ./KubeSpoke.Server/wwwroot/
+WORKDIR "/src/KubeSpoke.Server"
+# publish 自带编译，原来这里先 build 再 publish 等于同一份代码编译两遍
+RUN dotnet publish "KubeSpoke.Server.csproj" -c Release -o /app/publish /p:UseAppHost=false --no-restore
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "KubeSpoke.Server.dll"]

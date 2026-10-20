@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32804.182
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeSpoke.Agent", "KubeSpoke.Agent\KubeSpoke.Agent.csproj", "{90F0F1CF-F1D4-4179-A693-4FA43FA2747A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeSpoke.Contracts", "KubeSpoke.Contracts\KubeSpoke.Contracts.csproj", "{02E7C84C-EC7F-439B-9962-9D57217519E4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeSpoke.AgentTests", "KubeSpoke.AgentTests\KubeSpoke.AgentTests.csproj", "{A69159FE-BEB4-48A8-824E-887DFC57F2DD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案", "解决方案", "{5D3A4CB4-7FC9-461E-AB30-1A61B3A33A3E}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile-agent = Dockerfile-agent
+		Dockerfile-api = Dockerfile-api
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeSpoke.Server", "KubeSpoke.Server\KubeSpoke.Server.csproj", "{084C145A-01D0-4737-A2C3-74879EF6A9AE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{90F0F1CF-F1D4-4179-A693-4FA43FA2747A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90F0F1CF-F1D4-4179-A693-4FA43FA2747A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90F0F1CF-F1D4-4179-A693-4FA43FA2747A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90F0F1CF-F1D4-4179-A693-4FA43FA2747A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02E7C84C-EC7F-439B-9962-9D57217519E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02E7C84C-EC7F-439B-9962-9D57217519E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02E7C84C-EC7F-439B-9962-9D57217519E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02E7C84C-EC7F-439B-9962-9D57217519E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A69159FE-BEB4-48A8-824E-887DFC57F2DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A69159FE-BEB4-48A8-824E-887DFC57F2DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A69159FE-BEB4-48A8-824E-887DFC57F2DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A69159FE-BEB4-48A8-824E-887DFC57F2DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{084C145A-01D0-4737-A2C3-74879EF6A9AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{084C145A-01D0-4737-A2C3-74879EF6A9AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{084C145A-01D0-4737-A2C3-74879EF6A9AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{084C145A-01D0-4737-A2C3-74879EF6A9AE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CD32761C-62E4-4F10-A5D8-77E7B838D2FB}
+	EndGlobalSection
+EndGlobal

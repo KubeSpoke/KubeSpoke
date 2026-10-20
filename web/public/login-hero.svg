@@ -1,0 +1,152 @@
+<svg viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KubeSpoke 统一管控多个 Kubernetes 集群">
+  <defs>
+    <linearGradient id="baseTop" x1="600" y1="380" x2="600" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dcebff" stop-opacity=".85"/><stop offset="1" stop-color="#a9c9f5" stop-opacity=".75"/>
+    </linearGradient>
+    <linearGradient id="baseSide" x1="600" y1="540" x2="600" y2="705" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9dc0ef"/><stop offset="1" stop-color="#6f9fdc"/>
+    </linearGradient>
+    <linearGradient id="midTop" x1="600" y1="340" x2="600" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e6f1ff"/><stop offset="1" stop-color="#9fc3f7"/>
+    </linearGradient>
+    <linearGradient id="midSide" x1="600" y1="470" x2="600" y2="645" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3a78ee"/><stop offset="1" stop-color="#1c4dbd"/>
+    </linearGradient>
+    <linearGradient id="topTop" x1="600" y1="300" x2="600" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/><stop offset="1" stop-color="#e8f2ff"/>
+    </linearGradient>
+    <linearGradient id="topSide" x1="600" y1="430" x2="600" y2="580" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4a86f5"/><stop offset="1" stop-color="#2560d8"/>
+    </linearGradient>
+    <linearGradient id="slabFace" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffffff"/><stop offset="1" stop-color="#e9f2ff"/>
+    </linearGradient>
+    <linearGradient id="beamL" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#bfe4ff"/><stop offset="1" stop-color="#2f6fed"/>
+    </linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".5" r=".5">
+      <stop stop-color="#6db8ff" stop-opacity=".65"/><stop offset="1" stop-color="#6db8ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+
+  <!-- 地面投影 -->
+  <ellipse cx="600" cy="700" rx="300" ry="46" fill="#c7d6ea" opacity=".45" filter="url(#soft)"/>
+
+  <!-- 光束 -->
+  <g stroke="url(#beamL)" stroke-width="7" stroke-linecap="round" filter="url(#glow)" opacity=".9">
+    <line x1="392" y1="488" x2="303" y2="562"/>
+    <line x1="733" y1="392" x2="808" y2="330"/>
+    <line x1="798" y1="512" x2="893" y2="588"/>
+  </g>
+  <g stroke="#eaf7ff" stroke-width="2.5" stroke-linecap="round">
+    <line x1="392" y1="488" x2="303" y2="562"/>
+    <line x1="733" y1="392" x2="808" y2="330"/>
+    <line x1="798" y1="512" x2="893" y2="588"/>
+  </g>
+  <g>
+    <circle cx="392" cy="488" r="16" fill="url(#halo)"/><circle cx="392" cy="488" r="6" fill="#dff2ff"/>
+    <circle cx="733" cy="392" r="16" fill="url(#halo)"/><circle cx="733" cy="392" r="6" fill="#dff2ff"/>
+    <circle cx="798" cy="512" r="16" fill="url(#halo)"/><circle cx="798" cy="512" r="6" fill="#dff2ff"/>
+    <circle cx="303" cy="562" r="14" fill="url(#halo)"/><circle cx="303" cy="562" r="5" fill="#dff2ff"/>
+    <circle cx="808" cy="330" r="14" fill="url(#halo)"/><circle cx="808" cy="330" r="5" fill="#dff2ff"/>
+    <circle cx="893" cy="588" r="14" fill="url(#halo)"/><circle cx="893" cy="588" r="5" fill="#dff2ff"/>
+  </g>
+
+  <!-- 中央六边形平台：三层 -->
+  <g>
+    <path d="M855,545 L727.5,655 L472.5,655 L345,545 L345,591 L472.5,701 L727.5,701 L855,591 Z" fill="url(#baseSide)" opacity=".8"/>
+    <path d="M855,545 L727.5,435 L472.5,435 L345,545 L472.5,655 L727.5,655 Z" fill="url(#baseTop)" opacity=".8"/>
+    <path d="M830,490 L715,589.6 L485,589.6 L370,490 L370,542 L485,641.6 L715,641.6 L830,542 Z" fill="url(#midSide)"/>
+    <path d="M830,490 L715,390.4 L485,390.4 L370,490 L485,589.6 L715,589.6 Z" fill="url(#midTop)"/>
+    <path d="M815,448 L707.5,540.7 L492.5,540.7 L385,448 L385,482 L492.5,574.7 L707.5,574.7 L815,482 Z" fill="url(#topSide)"/>
+    <path d="M815,448 L707.5,355.3 L492.5,355.3 L385,448 L492.5,540.7 L707.5,540.7 Z" fill="url(#topTop)"/>
+    <path d="M815,448 L707.5,355.3 L492.5,355.3 L385,448 L492.5,540.7 L707.5,540.7 Z" fill="none" stroke="#7cc4ff" stroke-width="2.5" opacity=".9" filter="url(#glow)"/>
+  </g>
+
+  <!-- 舵轮 -->
+  <g>
+    <ellipse cx="600" cy="446" rx="150" ry="68" fill="#cfe0f7" opacity=".55" filter="url(#soft)"/>
+    <g stroke="#b9cdea" stroke-width="14" stroke-linecap="round">
+      <line x1="600" y1="437" x2="600" y2="363"/><line x1="600" y1="437" x2="600" y2="511"/>
+      <line x1="600" y1="437" x2="518" y2="397"/><line x1="600" y1="437" x2="682" y2="397"/>
+      <line x1="600" y1="437" x2="518" y2="477"/><line x1="600" y1="437" x2="682" y2="477"/>
+      <line x1="600" y1="437" x2="448" y2="437"/><line x1="600" y1="437" x2="752" y2="437"/>
+    </g>
+    <ellipse cx="600" cy="437" rx="128" ry="58" stroke="#b9cdea" stroke-width="26"/>
+    <ellipse cx="600" cy="431" rx="128" ry="58" stroke="#ffffff" stroke-width="26"/>
+    <g stroke="#ffffff" stroke-width="13" stroke-linecap="round">
+      <line x1="600" y1="431" x2="600" y2="357"/><line x1="600" y1="431" x2="600" y2="505"/>
+      <line x1="600" y1="431" x2="518" y2="391"/><line x1="600" y1="431" x2="682" y2="391"/>
+      <line x1="600" y1="431" x2="518" y2="471"/><line x1="600" y1="431" x2="682" y2="471"/>
+      <line x1="600" y1="431" x2="448" y2="431"/><line x1="600" y1="431" x2="752" y2="431"/>
+    </g>
+    <g fill="#ffffff">
+      <ellipse cx="600" cy="355" rx="9" ry="6"/><ellipse cx="600" cy="507" rx="9" ry="6"/>
+      <ellipse cx="516" cy="389" rx="9" ry="6"/><ellipse cx="684" cy="389" rx="9" ry="6"/>
+      <ellipse cx="516" cy="473" rx="9" ry="6"/><ellipse cx="684" cy="473" rx="9" ry="6"/>
+      <ellipse cx="446" cy="431" rx="9" ry="6"/><ellipse cx="754" cy="431" rx="9" ry="6"/>
+    </g>
+    <ellipse cx="600" cy="434" rx="44" ry="20" stroke="#b9cdea" stroke-width="17"/>
+    <ellipse cx="600" cy="430" rx="44" ry="20" stroke="#ffffff" stroke-width="17"/>
+  </g>
+
+  <!-- Cluster 1（左下） -->
+  <g>
+    <ellipse cx="225" cy="712" rx="118" ry="24" fill="#c7d6ea" opacity=".5" filter="url(#soft)"/>
+    <g transform="translate(225,668) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#9db4d0"/></g>
+    <g transform="translate(225,654) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#c9d9ee"/></g>
+    <g transform="translate(225,638) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#1d4fc0"/></g>
+    <g transform="translate(225,624) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#3f7cf0"/></g>
+    <g transform="translate(225,608) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#b9c9de"/></g>
+    <g transform="translate(225,594) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#eef4fc"/></g>
+    <g transform="translate(225,578) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#d5e2f2"/></g>
+    <g transform="translate(225,564) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="url(#slabFace)"/></g>
+  </g>
+
+  <!-- Cluster 2（右上） -->
+  <g>
+    <ellipse cx="845" cy="348" rx="118" ry="24" fill="#c7d6ea" opacity=".5" filter="url(#soft)"/>
+    <g transform="translate(845,304) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#9db4d0"/></g>
+    <g transform="translate(845,290) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#c9d9ee"/></g>
+    <g transform="translate(845,274) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#1d4fc0"/></g>
+    <g transform="translate(845,260) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#3f7cf0"/></g>
+    <g transform="translate(845,244) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#b9c9de"/></g>
+    <g transform="translate(845,230) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#eef4fc"/></g>
+    <g transform="translate(845,214) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#d5e2f2"/></g>
+    <g transform="translate(845,200) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="url(#slabFace)"/></g>
+  </g>
+
+  <!-- Cluster 3（右下） -->
+  <g>
+    <ellipse cx="965" cy="742" rx="118" ry="24" fill="#c7d6ea" opacity=".5" filter="url(#soft)"/>
+    <g transform="translate(965,698) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#9db4d0"/></g>
+    <g transform="translate(965,684) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#c9d9ee"/></g>
+    <g transform="translate(965,668) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#1d4fc0"/></g>
+    <g transform="translate(965,654) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#3f7cf0"/></g>
+    <g transform="translate(965,638) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#b9c9de"/></g>
+    <g transform="translate(965,624) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#eef4fc"/></g>
+    <g transform="translate(965,608) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="#d5e2f2"/></g>
+    <g transform="translate(965,594) scale(1,0.5) rotate(45)"><rect x="-84" y="-84" width="168" height="168" rx="24" fill="url(#slabFace)"/></g>
+  </g>
+
+  <!-- 标签 -->
+  <g font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="27" font-weight="600">
+    <g>
+      <rect x="118" y="452" width="196" height="50" rx="25" fill="#ffffff" opacity=".8" stroke="#dbe7f7"/>
+      <circle cx="150" cy="477" r="11" fill="#2f6fed"/>
+      <text x="172" y="486" fill="#2f6fed">Cluster 1</text>
+    </g>
+    <g>
+      <rect x="756" y="96" width="196" height="50" rx="25" fill="#ffffff" opacity=".8" stroke="#dbe7f7"/>
+      <circle cx="788" cy="121" r="11" fill="#2f6fed"/>
+      <text x="810" y="130" fill="#2f6fed">Cluster 2</text>
+    </g>
+    <g>
+      <rect x="884" y="490" width="196" height="50" rx="25" fill="#ffffff" opacity=".8" stroke="#dbe7f7"/>
+      <circle cx="916" cy="515" r="11" fill="#2f6fed"/>
+      <text x="938" y="524" fill="#2f6fed">Cluster 3</text>
+    </g>
+  </g>
+</svg>

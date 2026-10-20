@@ -1,0 +1,27 @@
+/.vs
+/KubeSpoke/obj
+/KubeSpoke/bin
+obj
+bin
+# vite 把控制台构建进 Server 的 wwwroot，产物不入库
+/KubeSpoke.Server/wwwroot/*
+
+# 控制台账号数据，容器部署时挂载
+/KubeSpoke.Server/App_Data
+
+# agent 本机直连调试时 Serilog 落的运行日志
+/KubeSpoke.Agent/Logs/
+
+# 界面插图的生成素材，入库的是 web/public 下的成品
+/vibe_images/
+
+# 凭据类文件一律不入库：kubeconfig、证书私钥、本地环境变量
+*.pfx
+*.p12
+*.key
+*.pem
+*.crt
+admin.conf
+.kubeconfig
+.env
+.env.*

@@ -1,0 +1,83 @@
+name: Image CI
+
+# 一个版本号同时出两个镜像，agent 与 server 不允许各自发版、各自打 tag。
+# 发布：
+#   git tag v0.1.0 && git push origin v0.1.0
+#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-agent:0.1.0
+#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.1.0
+# 手动触发不带版本号，只刷两个镜像的 :latest，用于首次验证流水线本身。
+# 前提：Secrets 里有 REGISTRY_PASSWORD（ACR 个人版「访问凭证」的固定密码），
+#       且 ACR 控制台已建好 springhgui/kubespoke-agent、springhgui/kubespoke-server 两个仓库。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com
+  REGISTRY_USERNAME: springhgui
+
+jobs:
+  image:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # 两个镜像共用同一条流程，一个挂了另一个也别继续发，避免出现一半新一半旧
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - dockerfile: Dockerfile-agent
+            image_name: kubespoke-agent
+          - dockerfile: Dockerfile-api
+            image_name: kubespoke-server
+    env:
+      IMAGE_NAME: ${{ matrix.image_name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # 登录排在一切重活之前：凭证或仓库不存在的失败，几秒钟就该结束，
+      # 别让人等完一趟还原+编译才发现密码不对。
+      - name: Log in to Alibaba CR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}
+          # match 类型自己就会附带 :latest，这里只补手动触发那一种情况
+          tags: |
+            type=match,pattern=v(.*),group=1
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      # 不加 buildx 缓存导出：runner 默认的 docker 驱动不支持 --cache-to，
+      # 要缓存就得另起 docker-container 驱动，而这两个镜像一次还原只要几十秒，不值得。
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 把 digest 写进作业摘要：集群 manifest 里建议钉 @sha256:... 而不是 :latest
+      - name: Record digest
+        run: |
+          {
+            echo "| 镜像 | 来源 ref | digest |"
+            echo "| --- | --- | --- |"
+            echo "| ${IMAGE_NAME} | ${GITHUB_REF_NAME} | ${{ steps.build.outputs.digest }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS base
+WORKDIR /app
+ENV TZ=Asia/Shanghai
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY NuGet.Config ./
+COPY ["KubeSpoke.Agent/KubeSpoke.Agent.csproj", "KubeSpoke.Agent/"]
+COPY ["KubeSpoke.Contracts/KubeSpoke.Contracts.csproj", "KubeSpoke.Contracts/"]
+RUN dotnet restore "KubeSpoke.Agent/KubeSpoke.Agent.csproj"
+COPY . .
+WORKDIR "/src/KubeSpoke.Agent"
+# publish 自带编译，原来这里先 build 再 publish 等于同一份代码编译两遍
+RUN dotnet publish "KubeSpoke.Agent.csproj" -c Release -o /app/publish /p:UseAppHost=false --no-restore
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "KubeSpoke.Agent.dll"]

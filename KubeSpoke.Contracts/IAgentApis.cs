@@ -1,0 +1,192 @@
+﻿using KubeSpoke.Contracts.Dtos;
+using KubeSpoke.Contracts.Dtos.Docker;
+using KubeSpoke.Contracts.Extensions;
+using KubeSpoke.Contracts.Models;
+using Docker.DotNet.Models;
+using k8s.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+using Secret = KubeSpoke.Contracts.Models.Secret;
+
+namespace KubeSpoke.Contracts
+{
+    /// <summary>
+    /// 代理端接口
+    /// 警告：接口的订单必须满足以下约束条件
+    /// 1.接口不能重载
+    /// 2.接口必须要且只能有一个参数，参数需继承<see cref="BaseRequest"/>
+    /// 3.接口必须有返回值
+    /// </summary>
+    public interface IAgentApis
+    {
+        /// <summary>
+        /// 获取Node信息
+        /// </summary>
+        /// <param name="clustUUID"></param>
+        /// <returns></returns>
+        public IEnumerable<V1Node> GetNodes(GetNodesRequest request);
+
+        public IEnumerable<V1Pod> GetPods(GetPodsRequest request);
+
+        /// <summary>
+        /// 获取命名空间列表
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public IEnumerable<Namespace> GetNamespaces(GetNamespaceRequest request);
+
+        /// <summary>
+        /// 删除pod
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public V1Pod DeletePod(DeletePodRequest request);
+
+        public bool DeleteNamespace(CreateNamespaceRequest request);
+
+        public V1Deployment GetDeployment(GetDeploymentRequest request);
+
+        /// <summary>
+        /// 获取部署
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public IEnumerable<Deployment> GetDeployments(GetDeploymentsRequest request);
+
+        /// <summary>
+        /// 创建命名空间
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Namespace CreateNamespace(CreateNamespaceRequest request);
+
+        /// <summary>
+        /// 删除部署
+        /// </summary>
+        /// <param name="request"></param>
+        public bool DeleteDeployment(DeleteDeploymentRequest request);
+
+        /// <summary>
+        /// 创建部署
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Deployment CreateDeployment(CreateDeploymentRequest request);
+
+        /// <summary>
+        /// 创建服务
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Service CreateService(CreateServiceRequest request);
+
+        /// <summary>
+        /// 删除服务
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public bool DeleteService(DeleteServiceRequest request);
+
+        public IEnumerable<Service> GetServices(GetServicesRequest request);
+
+        public bool DeleteSecret(DeleteSecretRequest request);
+
+        public Secret CreateSecret(CreateDockerSecretRequest request);
+
+        public IEnumerable<Secret> GetSecrets(GetSecretsRequest request);
+
+        public bool DeleteIngress(DeleteIngressRequest request);
+
+        public V1Ingress CreateIngress(CreateIngressRequest request);
+
+        public IEnumerable<Ingress> GetIngressList(GetIngressListRequest request);
+
+        public Secret CreateDockerRegistrySecret(CreateDockerSecretRequest request);
+
+        public IEnumerable<V1IngressClass> GetIngressClassList(GetIngressClassListRequest request);
+
+        public V1IngressClass CreateIngressClass(CreateIngressClassRequest request);
+
+        public bool DeleteIngressClass(DeleteIngressClassRequest request);
+
+        public V1Secret CreateTlsSecret(CreateTlsSecretRequest request);
+
+        public V1ConfigMap CreateConfigMap(CreateConfigMapRequest request);
+
+        public V1ConfigMap GetConfigMap(GetConfigMapRequest request);
+
+        public IEnumerable<V1ConfigMap> GetConfigMaps(GetConfigMapsRequest request);
+
+        public bool DeleteConfigMap(DeleteConfigMapRequest request);
+
+        public IList<V1PersistentVolumeClaim> GetPersistentVolumeClaimList(GetPersistentVolumeClaimListRequest request);
+
+        public V1PersistentVolumeClaim CreatePersistentVolumeClaim(CreatePersistentVolumeClaimRequest request);
+
+        public V1PersistentVolumeClaim DeletePersistentVolumeClaim(DeletePersistentVolumeClaimRequest request);
+
+        public IEnumerable<V1PersistentVolume> GetPersistentVolumeList(GetPersistentVolumeListRequest request);
+
+        public IEnumerable<V1StorageClass> GetStorageClassList(GetStorageClassListRequest request);
+
+        public IList<ContainerListResponse> GetContainerList(GetContainerListRequest request);
+
+        public ChannelReader<string> GetContainerLogs(GetContainerLogsRequest request);
+
+        public bool StopContainer(RemoveContainerRequest request);
+        public bool RemoveContainer(RemoveContainerRequest request);
+        public CreateContainerResponse CreateContainer(CreateContainerRequest request);
+
+        public ChannelReader<string> ReadPodLog(ReadPodLogRequest request);
+
+        public V1Deployment ReplaceImage(ReplaceImageRequest request);
+
+        public V1Pod GetPodStatus(ReadPodLogRequest request);
+
+        public IEnumerable<Corev1Event> GetEvents(GetEventsRequest request);
+
+        public IEnumerable<NodeMetrics> GetNodesMetrics(GetPodsMetricsRequest request);
+
+        public V1Scale GetReplicaSetScale(GetReplicaSetScaleRequest request);
+
+        public V1ReplicaSet GetReplicaSet(GetReplicaSetScaleRequest request);
+
+        public bool RemoveCanaryApp(RemoveCanaryAppRequest request);
+
+        public IList<V1ReplicaSet> ListReplicaSet(ListReplicaSetRequest request);
+
+        public CreateCanaryAppResponse CreateCanaryApp(CreateCanaryAppRequest request);
+
+        public CreateCanaryAppResponse GetCanaryApp(RemoveCanaryAppRequest request);
+
+        bool ChangeCanaryWeight(ChangeCanaryWeightRequest request);
+
+        public IEnumerable<PodMetrics> GetPodsMetrics(GetPodsMetricsRequest request);
+
+        // ---- 通用 K8s 资源（覆盖 KubeSphere 集群管理下 StatefulSet/DaemonSet/Job/CronJob/
+        //      ServiceAccount/Role/ClusterRole/PV/StorageClass/CRD 及自定义资源）----
+
+        /// <summary>列出某类资源；内置类型走类型化 API，未知类型走 CustomObjects</summary>
+        public object ListResources(ListResourcesRequest request);
+
+        /// <summary>读取单个资源（详情/资源摘要）</summary>
+        public object ReadResource(DeleteResourceRequest request);
+
+        /// <summary>删除单个资源</summary>
+        public bool DeleteResource(DeleteResourceRequest request);
+
+        /// <summary>以 YAML 创建或替换任意资源</summary>
+        public bool ApplyResource(ApplyResourceRequest request);
+
+        /// <summary>集群版本等基本信息（概览页）</summary>
+        public object GetClusterInfo(ClusterInfoRequest request);
+
+        /// <summary>查询某对象关联事件（保留 involvedObject），供详情页「事件」标签</summary>
+        public IEnumerable<Corev1Event> GetResourceEvents(GetResourceEventsRequest request);
+    }
+}

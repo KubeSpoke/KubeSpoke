@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "KubeSpoke.Agent": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
