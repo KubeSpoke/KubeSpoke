@@ -9,20 +9,16 @@ import type { ThemeConfig } from 'antd'
  *   - ksTheme  → antd ConfigProvider（main.tsx 消费）
  *   - KS       → 布局度量与调色板，供外壳与内联样式引用
  *   - ksTokens → index.css 里 @theme 的镜像（Tailwind 侧同源，避免两处漂移）
- * 所有颜色都来自 KubeSphere 官方控制台取色（品牌蓝 #329dce 等）。
+ * 所有颜色都来自 KubeSphere 官方控制台取色，品牌强调色对齐站内蓝（#2f6fed，与 logo/登录页/仪表盘同源）。
  */
 
-/** KubeSphere 调色板 —— 从真实控制台逐像素取色（v4.2.1 实例） */
+/** 站内调色板 —— 品牌蓝取自 logo 与登录页，中性色按 KubeSphere 控制台逐像素取色（v4.2.1 实例） */
 export const palette = {
-  /** 品牌强调色（青绿）：链接悬停、选中菜单文字、Tab 下划线、开关 */
-  brand: '#29b6a9',
-  brandHover: '#3fcabf',
-  brandActive: '#1e9c90',
-  brandBg: '#e6f7f5',
-  /** 主操作按钮：KubeSphere 是深藏青实心，不是亮蓝 */
-  btnPrimary: '#233046',
-  btnPrimaryHover: '#324259',
-  btnPrimaryActive: '#1a2434',
+  /** 品牌强调色（蓝）：链接悬停、选中菜单文字、Tab 下划线、开关 */
+  brand: '#2f6fed',
+  brandHover: '#4f8bff',
+  brandActive: '#1f5fe0',
+  brandBg: '#e8f1ff',
   /** 顶栏 / logo 深色 */
   ink: '#242e42',
   /** 标题文字（深，带蓝调） */
@@ -49,7 +45,7 @@ export const palette = {
   success: '#59c492',
   warning: '#f5a623',
   danger: '#d94f4f',
-  info: '#29b6a9',
+  info: '#2f6fed',
 } as const
 
 /** 布局度量 —— 复刻 KubeSphere 应用外壳尺寸 */
@@ -145,10 +141,10 @@ export const ksTheme: ThemeConfig = {
       headerBorderRadius: 0,
     },
     Button: {
-      // KubeSphere 主按钮=深藏青实心、小圆角（不是亮蓝、不是全胶囊）
-      colorPrimary: palette.btnPrimary,
-      colorPrimaryHover: palette.btnPrimaryHover,
-      colorPrimaryActive: palette.btnPrimaryActive,
+      // 主按钮＝品牌蓝实心（全站唯一来源，页面不要再写内联渐变覆盖）
+      colorPrimary: palette.brand,
+      colorPrimaryHover: palette.brandHover,
+      colorPrimaryActive: palette.brandActive,
       borderRadius: 6,
       fontWeight: 400,
       primaryShadow: 'none',

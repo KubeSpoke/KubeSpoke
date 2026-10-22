@@ -35,7 +35,7 @@ namespace KubeSpoke.Server.Filters
         /// 反射调用套 TargetInvocationException，同步等异步套 AggregateException，
         /// 只剥一层会把 "One or more errors occurred." 原样抛给前端，真正的错因留在第二层里。
         /// </summary>
-        static Exception Unwrap(Exception ex)
+        internal static Exception Unwrap(Exception ex)
         {
             while (true)
             {

@@ -419,7 +419,6 @@ export default function ClustersManagePage() {
             icon={<ReloadOutlined />}
             loading={loading}
             onClick={() => void load()}
-            style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}
           >
             刷新
           </Button>
@@ -452,7 +451,6 @@ export default function ClustersManagePage() {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}
               onClick={() => setAddOpen(true)}
             >
               添加集群

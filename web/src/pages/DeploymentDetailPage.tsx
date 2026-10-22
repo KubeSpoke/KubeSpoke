@@ -1,4 +1,4 @@
-import { App, Alert, Button, Drawer, Dropdown, Empty, Input, InputNumber, Modal, Space, Table, Tabs, Tag, Typography } from 'antd'
+import { App, Alert, Button, Drawer, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Typography } from 'antd'
 import type { TablePaginationConfig } from 'antd'
 import { ContainerOutlined, DownOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -7,6 +7,7 @@ import { NameCell } from '../components/PageShell'
 import { DetailDrawer } from '../components/DetailDrawer'
 import EventsPanel from '../components/EventsPanel'
 import PodLogStream from '../components/PodLogStream'
+import { PodTerminal } from '../components/PodTerminal'
 import { clusterApi } from '../api/cluster'
 import { resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
@@ -43,6 +44,8 @@ const ALIAS_KEY = 'kubesphere.io/alias-name'
 const DESC_KEY = 'kubesphere.io/description'
 const CREATOR_KEY = 'kubesphere.io/creator'
 const RESTART_KEY = 'kubespoke.io/restartedAt'
+/** k8s 自己维护的修订号：每次模板变更 +1，回退历史就靠它认版本 */
+const REVISION_KEY = 'deployment.kubernetes.io/revision'
 
 const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
 
@@ -197,6 +200,8 @@ export function DeploymentDetailBody({
   const [busy, setBusy] = useState(false)
   const [pageSize, setPageSize] = useState(10)
   const [logPod, setLogPod] = useState<string | null>(null)
+  const [termPod, setTermPod] = useState<V1Pod | null>(null)
+  const [termContainer, setTermContainer] = useState('')
   const [infoOpen, setInfoOpen] = useState(false)
   const [alias, setAlias] = useState('')
   const [desc, setDesc] = useState('')
@@ -215,6 +220,7 @@ export function DeploymentDetailBody({
   const labels = deploy.data?.metadata?.labels ?? {}
   const appLabel = labels['app.kubernetes.io/name'] || labels['app'] || '-'
   const creator = annotation(deploy.data, CREATOR_KEY) || '-'
+  const currentRevision = annotation(deploy.data, REVISION_KEY)
 
   const rsRows = useMemo(() => {
     const list = (rsRes.data ?? []).filter((o) => {
@@ -552,6 +558,16 @@ export function DeploymentDetailBody({
                             <Button
                               size="small"
                               type="link"
+                              onClick={() => {
+                                setTermPod(p)
+                                setTermContainer(p.spec?.containers?.[0]?.name ?? '')
+                              }}
+                            >
+                              终端
+                            </Button>
+                            <Button
+                              size="small"
+                              type="link"
                               danger
                               onClick={() =>
                                 modal.confirm({
@@ -595,6 +611,23 @@ export function DeploymentDetailBody({
                     pagination={pagination}
                     locale={{ emptyText: '没有历史版本' }}
                     columns={[
+                      {
+                        title: '版本',
+                        width: 100,
+                        render: (_, r) => {
+                          const rev = annotation(r, REVISION_KEY)
+                          return (
+                            <span className="whitespace-nowrap">
+                              {rev || '-'}
+                              {rev && rev === currentRevision && (
+                                <Tag color="blue" variant="filled" style={{ marginLeft: 6 }}>
+                                  当前
+                                </Tag>
+                              )}
+                            </span>
+                          )
+                        },
+                      },
                       {
                         title: '名称',
                         render: (_, r) => <span className="kbd-mono text-xs">{r.metadata?.name ?? '-'}</span>,
@@ -783,6 +816,7 @@ export function DeploymentDetailBody({
         {yamlModal?.editable ? (
           <Input.TextArea
             className="kbd-mono"
+            spellCheck={false}
             value={yamlModal.text}
             onChange={(e) => setYamlModal({ ...yamlModal, text: e.target.value })}
             autoSize={{ minRows: 16, maxRows: 26 }}
@@ -898,6 +932,40 @@ export function DeploymentDetailBody({
 
       <Drawer open={!!logPod} onClose={() => setLogPod(null)} size={760} title={`容器组日志 · ${logPod ?? ''}`} destroyOnHidden>
         <PodLogStream cluster={cluster} namespace={ns} pod={logPod ?? ''} />
+      </Drawer>
+
+      <Drawer
+        open={!!termPod}
+        onClose={() => setTermPod(null)}
+        size={860}
+        title={`容器组终端 · ${termPod?.metadata?.name ?? ''}`}
+        destroyOnHidden
+      >
+        {termPod && (
+          <>
+            {(termPod.spec?.containers?.length ?? 0) > 1 && (
+              <Space size={8} className="mb-2">
+                <Typography.Text type="secondary" className="!text-xs">
+                  容器
+                </Typography.Text>
+                <Select
+                  size="small"
+                  className="!w-48"
+                  value={termContainer}
+                  onChange={setTermContainer}
+                  options={(termPod.spec?.containers ?? []).map((c) => ({ value: c.name, label: c.name }))}
+                />
+              </Space>
+            )}
+            <PodTerminal
+              cluster={cluster}
+              namespace={termPod.metadata?.namespace ?? ns}
+              pod={termPod.metadata?.name ?? ''}
+              container={termContainer}
+              running={termPod.status?.phase === 'Running'}
+            />
+          </>
+        )}
       </Drawer>
     </>
   )

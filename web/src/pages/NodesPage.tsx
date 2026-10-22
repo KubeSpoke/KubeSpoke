@@ -612,7 +612,7 @@ export default function NodesPage() {
         {/* 表格卡片 */}
         <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <Button type="primary" icon={<PlusOutlined />} style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }} onClick={() => setAddOpen(true)}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
               添加节点
             </Button>
             {selected.length > 0 && <Button danger onClick={batchDelete}>批量删除（{selected.length}）</Button>}

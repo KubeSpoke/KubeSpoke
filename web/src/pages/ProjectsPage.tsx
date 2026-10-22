@@ -348,7 +348,6 @@ export default function ProjectsPage() {
               type="primary"
               disabled={!cluster}
               icon={<PlusOutlined />}
-              style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}
               onClick={() => setCreateOpen(true)}
             >
               新建项目
@@ -785,6 +784,7 @@ function YamlModal({ project, cluster, onClose }: { project: K8sObject; cluster:
       <Spin spinning={loading}>
         <Input.TextArea
           readOnly
+          spellCheck={false}
           className="kbd-mono"
           value={toYaml(data ?? project)}
           autoSize={{ minRows: 14, maxRows: 24 }}

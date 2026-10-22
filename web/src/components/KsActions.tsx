@@ -758,7 +758,7 @@ function YamlEditWrapper({
 
   return (
     <>
-      <Input.TextArea className="kbd-mono" value={text} onChange={(e) => setText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
+      <Input.TextArea className="kbd-mono" spellCheck={false} value={text} onChange={(e) => setText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
       <div className="mt-4 text-right">
         <Space>
           <Button onClick={onCancel}>取消</Button>

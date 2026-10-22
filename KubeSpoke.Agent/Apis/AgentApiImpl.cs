@@ -20,6 +20,7 @@ using System.Threading.Channels;
 using System.Xml.Linq;
 using static KubeSpoke.Contracts.Models.Service;
 using static System.Net.Mime.MediaTypeNames;
+using KubeSpoke.Agent.Connecting;
 using KubeSpoke.Agent.Models;
 using Microsoft.Extensions.Logging;
 
@@ -833,22 +834,65 @@ namespace KubeSpoke.Agent.Apis
 
         public ChannelReader<string> ReadPodLog(ReadPodLogRequest request)
         {
-            var stream = client.CoreV1.ReadNamespacedPodLog(request.Name, request.Namespace);
+            // 没带会话 id 就现造一个：宁可这条流暂时不可寻址，也不能让两个会话抢同一个键互相踢
+            var sessionId = request.SessionId == Guid.Empty ? Guid.NewGuid() : request.SessionId;
 
-            var channel = Channel.CreateUnbounded<string>();
-            Task.Run(async () =>
+            // 先登记再取流：取流这段时间里浏览器可能已经关掉了面板，那时 LogClose 得有个会话可关
+            var (reader, cts, output) = LogSessions.Open(sessionId);
+            var token = cts.Token;
+
+            try
             {
-                byte[] buffer = new byte[1024];
-                while (true)
-                {
-                    var count = await stream.ReadAsync(buffer);
-                    if (count == 0) { break; }
-                    var logs = Encoding.UTF8.GetString(buffer, 0, count);
-                    await channel.Writer.WriteAsync(logs);
-                }
-            });
+                // 取流留在调用线程上做：pod 不存在、权限不够这些错要照 RPC 回执原路回给调用方，
+                // 挪进后台任务就成了静默失败——日志面板只会显示一片空白。
+                var stream = client.CoreV1.ReadNamespacedPodLog(request.Name, request.Namespace);
 
-            return channel;
+                // 会话已经被关掉了的话 Attach 顺手把这条响应流收走
+                if (!LogSessions.Attach(sessionId, stream))
+                {
+                    return reader;
+                }
+
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        byte[] buffer = new byte[4096];
+                        while (true)
+                        {
+                            var count = await stream.ReadAsync(buffer, token).ConfigureAwait(false);
+                            if (count == 0) { break; }
+                            var logs = Encoding.UTF8.GetString(buffer, 0, count);
+                            await output.WriteAsync(logs, token).ConfigureAwait(false);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // 面板关了，正常收摊
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // 被关掉的同时响应流也 Dispose 了，读循环从这边醒过来同样是正常收摊
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, $"[日志推流中断] {request.Namespace}/{request.Name}");
+                    }
+                    finally
+                    {
+                        LogSessions.Remove(sessionId);
+                    }
+                });
+
+                return reader;
+            }
+            catch
+            {
+                // 半途失败也必须把 writer 完成掉：服务端那侧等的是 stream.Completion，
+                // 不落地就等于每开一次日志面板永久吃掉一个该连接的 invocation 槽位，攒够就整条 RPC 通道瘫掉
+                LogSessions.Remove(sessionId);
+                throw;
+            }
         }
 
         public V1Pod GetPodStatus(ReadPodLogRequest request)

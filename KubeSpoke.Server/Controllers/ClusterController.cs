@@ -1,6 +1,5 @@
 using KubeSpoke.Contracts;
 using KubeSpoke.Contracts.Dtos;
-using KubeSpoke.Contracts.Dtos.Docker;
 using KubeSpoke.Contracts.Models;
 using k8s.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -97,26 +96,6 @@ namespace KubeSpoke.Server.Controllers
         }
 
         [HttpGet]
-        public async Task GetContainerLogs([FromQuery] GetContainerLogsRequest request)
-        {
-            Response.ContentType = "text/plain";
-            StreamWriter sw;
-
-            var stream = agentApis.GetContainerLogs(request);
-            await using ((sw = new StreamWriter(Response.Body)).ConfigureAwait(false))
-            {
-                while (await stream.WaitToReadAsync())
-                {
-                    while (stream.TryRead(out var item))
-                    {
-                        await sw.WriteLineAsync(item.ToString()).ConfigureAwait(false);
-                        await sw.FlushAsync().ConfigureAwait(false);
-                    }
-                }
-            }
-        }
-
-        [HttpGet]
         public IAsyncEnumerable<string> GetWeatherForecastStream()
         {
             async IAsyncEnumerable<string> streamWeatherForecastsAsync()
@@ -130,28 +109,6 @@ namespace KubeSpoke.Server.Controllers
 
             return streamWeatherForecastsAsync();
         }
-
-        //[HttpGet]
-        //public async Task<EmptyResult> GetContainerLogs([FromQuery] GetContainerLogsRequest request)
-        //{
-        //    Response.ContentType = "text/plain";
-        //    StreamWriter sw;
-        //    var stream = agentApis.GetContainerLogs(request);
-
-        //    await using ((sw = new StreamWriter(Response.Body)).ConfigureAwait(false))
-        //    {
-        //        while (await stream.WaitToReadAsync())
-        //        {
-        //            while (stream.TryRead(out var item))
-        //            {
-        //                await sw.WriteAsync(item).ConfigureAwait(false);
-        //                await sw.FlushAsync().ConfigureAwait(false);
-        //            }
-        //        }
-        //    }
-
-        //    return new EmptyResult();
-        //}
 
         ///// <summary>
         ///// 获取pod列表

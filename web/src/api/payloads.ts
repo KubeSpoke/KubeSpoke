@@ -27,7 +27,7 @@ export interface LabelRowIn {
 }
 
 /** {key,value}[] → Record，去空键、去保留键（如 Service/Deployment 的 app）；空则 undefined */
-function labelsFromRows(rows: LabelRowIn[] | undefined, reserved: string[] = []): Record<string, string> | undefined {
+export function labelsFromRows(rows: LabelRowIn[] | undefined, reserved: string[] = []): Record<string, string> | undefined {
   const map: Record<string, string> = {}
   for (const l of rows ?? []) {
     const k = l?.key?.trim()
@@ -41,6 +41,30 @@ function labelsFromRows(rows: LabelRowIn[] | undefined, reserved: string[] = [])
 function descAnnotation(desc: string | undefined): Record<string, string> | undefined {
   const d = desc?.trim()
   return d ? { 'kubesphere.io/description': d } : undefined
+}
+
+/** {key,value}[] → ConfigMap data：去空键，值缺省为空串 */
+export function dataFromRows(rows: LabelRowIn[] | undefined): Record<string, string> {
+  const data: Record<string, string> = {}
+  for (const row of rows ?? []) {
+    const key = row?.key?.trim()
+    if (!key) continue
+    data[key] = row.value ?? ''
+  }
+  return data
+}
+
+/** 重复的键（已 trim、忽略空键）：编辑已有配置字典时用于拦下会被静默覆盖的行 */
+export function duplicateDataKeys(rows: LabelRowIn[] | undefined): string[] {
+  const seen = new Set<string>()
+  const dup = new Set<string>()
+  for (const row of rows ?? []) {
+    const key = row?.key?.trim()
+    if (!key) continue
+    if (seen.has(key)) dup.add(key)
+    else seen.add(key)
+  }
+  return [...dup]
 }
 
 /* ---------------- Deployment ---------------- */
@@ -280,12 +304,7 @@ export function buildConfigMapPayload(
   values: ConfigMapFormValues,
   ctx: Ctx,
 ): CreateConfigMapPayload {
-  const data: Record<string, string> = {}
-  for (const row of values.items ?? []) {
-    const key = row?.key?.trim()
-    if (!key) continue
-    data[key] = row.value ?? ''
-  }
+  const data = dataFromRows(values.items)
   const labels = labelsFromRows(values.LabelRows)
   const annotations = descAnnotation(values.Description)
   return {

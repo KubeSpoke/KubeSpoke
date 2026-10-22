@@ -3,11 +3,12 @@ import {
   LogoutOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Dropdown, Layout, Menu, Select, Space, Tooltip, Typography } from 'antd'
+import { Avatar, Badge, Dropdown, Layout, Menu, Select, Space, Tooltip, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { topScopes, clusterPath } from '../config/nav'
-import type { NavGroup } from '../config/nav'
+import type { NavGroup, NavItem } from '../config/nav'
+import { alertApi } from '../api/alerts'
 import { ChangePasswordModal } from '../components/ChangePasswordModal'
 import BrandMark from '../components/BrandMark'
 import { useAuthStore } from '../store/useAuthStore'
@@ -54,6 +55,24 @@ export function MainLayout() {
     void loadAgents()
   }, [loadAgents])
 
+  /** 在告且没人确认过的条数，和采集同节奏（一分钟）刷一次角标 */
+  const [unackedAlerts, setUnackedAlerts] = useState(0)
+  useEffect(() => {
+    const load = () => alertApi.unackedCount().then(setUnackedAlerts).catch(() => setUnackedAlerts(0))
+    void load()
+    const timer = setInterval(load, 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const navLabel = (item: NavItem) =>
+    item.key === '/alerts' && unackedAlerts > 0 ? (
+      <Badge count={unackedAlerts} size="small" offset={[10, 0]}>
+        {item.label}
+      </Badge>
+    ) : (
+      item.label
+    )
+
   const scope = useMemo(() => scopeOf(location.pathname), [location.pathname])
 
   /** 集群管理是独立整页：不挂左侧菜单与面包屑，只保留顶栏 */
@@ -92,11 +111,12 @@ export function MainLayout() {
                 <span style={{ fontSize: 12, color: '#a0aab8', fontWeight: 500 }}>{g.title}</span>
               ),
               type: 'group' as const,
-              children: g.items.map((it) => ({ key: to(it.key), icon: it.icon, label: it.label })),
+              children: g.items.map((it) => ({ key: to(it.key), icon: it.icon, label: navLabel(it) })),
             }
-          : { key: `u${gi}`, type: 'group' as const, children: g.items.map((it) => ({ key: to(it.key), icon: it.icon, label: it.label })) },
+          : { key: `u${gi}`, type: 'group' as const, children: g.items.map((it) => ({ key: to(it.key), icon: it.icon, label: navLabel(it) })) },
       ),
-    [scope, scopedCluster],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scope, scopedCluster, unackedAlerts],
   )
 
   return (

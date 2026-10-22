@@ -960,7 +960,6 @@ export default function ResourceListPage() {
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}
                   onClick={openCreate}
                 >
                   {createTitle}
@@ -1160,6 +1159,7 @@ export default function ResourceListPage() {
           </Typography.Text>
           <Input.TextArea
             className="kbd-mono mt-2"
+            spellCheck={false}
             value={yaml}
             onChange={(e) => setYaml(e.target.value)}
             autoSize={{ minRows: 12, maxRows: 20 }}

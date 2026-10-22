@@ -1,4 +1,5 @@
 import {
+  AlertOutlined,
   ApartmentOutlined,
   BarChartOutlined,
   BlockOutlined,
@@ -12,6 +13,7 @@ import {
   FunctionOutlined,
   GlobalOutlined,
   HddOutlined,
+  HistoryOutlined,
   KeyOutlined,
   PartitionOutlined,
   RetweetOutlined,
@@ -125,6 +127,15 @@ export const clusterNav: NavGroup[] = [
       { key: 'settings/visibility', label: '集群可见性', icon: <GlobalOutlined /> },
       { key: 'settings/roles', label: '集群角色', icon: <SafetyCertificateOutlined /> },
       { key: 'settings/members', label: '集群成员', icon: <TeamOutlined /> },
+    ],
+  },
+  {
+    // 这两页是平台级的，不随当前集群走，所以 key 用绝对路径（MainLayout 按 / 前缀直通）
+    title: '平台运维',
+    items: [
+      { key: '/alerts', label: '告警中心', icon: <AlertOutlined /> },
+      { key: '/audit', label: '审计日志', icon: <HistoryOutlined /> },
+      { key: '/settings', label: '系统设置', icon: <SettingOutlined /> },
     ],
   },
 ]

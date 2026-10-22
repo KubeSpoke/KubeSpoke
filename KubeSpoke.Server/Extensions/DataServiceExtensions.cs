@@ -16,6 +16,15 @@ namespace KubeSpoke.Server.Extensions
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite($"Data Source={Path.Combine(dir, "kubespoke.db")}"));
             services.AddScoped<UserRepository>();
+            services.AddScoped<AuditRepository>();
+            services.AddScoped<AlertRepository>();
+            services.AddScoped<AlertChannelRepository>();
+            services.AddScoped<AlertNotifyRepository>();
+            services.AddScoped<SystemSettingsRepository>();
+            services.AddScoped<KubeSpoke.Server.Services.AlertNotifier>();
+            // 通知送不出去不该把连接堆在工厂里重连，5 秒超时由调用方自己掐
+            services.AddHttpClient("alert-webhook");
+            services.AddScoped<KubeSpoke.Server.Filters.AuditFilter>();
             return services;
         }
 
@@ -32,6 +41,10 @@ namespace KubeSpoke.Server.Extensions
             var users = scope.ServiceProvider.GetRequiredService<UserRepository>();
             if (!await users.HasAnyUserAsync())
                 logger.LogWarning("库内还没有账号，打开控制台按提示设置管理员口令即可完成初始化");
+
+            // RPC 时限每次调用都读内存值，启动时把库里设过的灌进去
+            Global.RpcTimeoutSec = await scope.ServiceProvider
+                .GetRequiredService<SystemSettingsRepository>().GetRpcTimeoutSecAsync();
         }
     }
 }

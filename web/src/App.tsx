@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { RequireAuth } from './components/RequireAuth'
 import { MainLayout } from './layouts/MainLayout'
 import { clusterPath } from './config/nav'
+import AlertsPage from './pages/AlertsPage'
+import AuditPage from './pages/AuditPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import ClustersManagePage from './pages/ClustersManagePage'
 import DashboardPage from './pages/DashboardPage'
@@ -17,6 +19,7 @@ import ProjectsPage from './pages/ProjectsPage'
 import ResourceDetailPage from './pages/ResourceDetailPage'
 import ResourceListPage from './pages/ResourceListPage'
 import ServicesPage from './pages/ServicesPage'
+import SystemSettingsPage from './pages/SystemSettingsPage'
 import WorkloadsPage from './pages/WorkloadsPage'
 import BaseInfoPage from './pages/settings/BaseInfoPage'
 import ClusterRolesPage from './pages/settings/ClusterRolesPage'
@@ -159,6 +162,13 @@ export default function App() {
           {/* 平台层作用域（占位） */}
           <Route path="/access" element={<PlatformPlaceholder title="用户与访问控制" />} />
           <Route path="/access/roles" element={<PlatformPlaceholder title="平台角色" />} />
+
+          {/* 平台运维：跨集群的告警与写操作留痕 */}
+          <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/audit" element={<AuditPage />} />
+
+          {/* 控制台自身参数，不属于任何集群 */}
+          <Route path="/settings" element={<SystemSettingsPage />} />
 
           <Route path="*" element={<Navigate to={CLUSTERS} replace />} />
         </Route>

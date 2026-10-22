@@ -1,8 +1,8 @@
-import { App, Button, Form, Input } from 'antd'
-import { MinusOutlined, PlusOutlined } from '@ant-design/icons'
+import { App, Form, Input } from 'antd'
 import { useEffect, useState } from 'react'
 import KsCreateModal from '../../components/KsCreateModal'
 import { DescriptionField, LabelRowsField } from '../../components/LabelRowsField'
+import { DataItemsField } from './DataItemsField'
 import { clusterApi } from '../../api/cluster'
 import { buildConfigMapPayload } from '../../api/payloads'
 import type { ConfigMapFormValues as FormValues } from '../../api/payloads'
@@ -83,35 +83,7 @@ export function CreateConfigMapModal({ open, onClose, cluster, namespace, onCrea
           <Input disabled value={namespace} />
         </Form.Item>
 
-        <Form.Item label="数据项" required>
-          <Form.List name="items">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name: fieldName, ...restField }) => (
-                  <div key={key} className="mb-2 flex items-start gap-2">
-                    <Form.Item {...restField} name={[fieldName, 'key']} className="!mb-0" style={{ width: 200 }}>
-                      <Input placeholder="键" />
-                    </Form.Item>
-                    <Form.Item {...restField} name={[fieldName, 'value']} className="!mb-0 flex-1">
-                      <Input.TextArea autoSize={{ minRows: 1, maxRows: 8 }} placeholder="值（支持多行，可粘贴整段配置）" />
-                    </Form.Item>
-                    <Button
-                      className="mt-0.5"
-                      size="small"
-                      type="text"
-                      icon={<MinusOutlined />}
-                      onClick={() => remove(fieldName)}
-                      disabled={fields.length <= 1}
-                    />
-                  </div>
-                ))}
-                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add({ key: '', value: '' })}>
-                  添加数据项
-                </Button>
-              </>
-            )}
-          </Form.List>
-        </Form.Item>
+        <DataItemsField />
 
         <DescriptionField />
         <LabelRowsField />

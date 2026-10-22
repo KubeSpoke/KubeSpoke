@@ -22,8 +22,8 @@ type Props = Omit<ModalProps, 'footer' | 'closable' | 'closeIcon' | 'title' | 'o
 }
 
 /**
- * 1:1 复刻 KubeSphere「创建」弹窗：宽居中 Modal + 自定义头部（左标题、右「编辑 YAML」开关 + 深色方块关闭）
- * + 步骤条 + 页脚（取消 / 上一步 / 下一步 / 确定深藏青）。传 steps+current 即真实分步向导。
+ * 1:1 复刻 KubeSphere「创建」弹窗：宽居中 Modal + 自定义头部（左标题、右「编辑 YAML」开关 + 关闭图标）
+ * + 步骤条 + 页脚（取消 / 上一步 / 下一步 / 确定）。传 steps+current 即真实分步向导。
  */
 export function KsCreateModal({
   title,
@@ -74,7 +74,7 @@ export function KsCreateModal({
           )}
           <button
             onClick={close}
-            className="grid size-7 place-items-center rounded bg-[#242e42] text-white transition-colors hover:bg-[#324259]"
+            className="grid size-7 place-items-center rounded text-[#8f9aa9]! transition-colors hover:bg-[#f4f6fa] hover:text-[#222b45]!"
             aria-label="关闭"
           >
             <CloseOutlined style={{ fontSize: 13 }} />
@@ -99,11 +99,11 @@ export function KsCreateModal({
               >
                 <span
                   className="grid size-5 place-items-center rounded-full text-[12px] font-medium text-white"
-                  style={{ background: done || active ? '#29b6a9' : '#b6bfcc' }}
+                  style={{ background: done || active ? '#2f6fed' : '#b6bfcc' }}
                 >
                   {i + 1}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#222b45' : done ? '#29b6a9' : '#7a8798' }}>
+                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#222b45' : done ? '#2f6fed' : '#7a8798' }}>
                   {s}
                 </span>
               </button>

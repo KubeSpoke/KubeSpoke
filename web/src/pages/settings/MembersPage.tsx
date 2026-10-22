@@ -574,7 +574,7 @@ export default function MembersPage() {
               </div>
             </div>
           </div>
-          <Button type="primary" icon={<UserAddOutlined />} style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }} onClick={() => setInviting(true)}>
+          <Button type="primary" icon={<UserAddOutlined />} onClick={() => setInviting(true)}>
             邀请成员
           </Button>
         </div>

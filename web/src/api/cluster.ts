@@ -155,6 +155,23 @@ export const clusterApi = {
     const query = new URLSearchParams({ clusterId: c, podName, Namespace: namespace })
     return `/pod-log?${query}`
   },
+
+  /**
+   * 容器终端走 SignalR：/pod-exec，服务端推 "ExecOutput"（base64 帧）/"ExecClosed"，
+   * 前端发 "Input"(base64) 与 "Resize"(cols, rows)。宽高在连接时就定下，之后靠 Resize 跟。
+   */
+  execHubUrl: (c: string, namespace: string, podName: string, container: string, command: string, cols: number, rows: number) => {
+    const query = new URLSearchParams({
+      clusterId: c,
+      podName,
+      Namespace: namespace,
+      container,
+      command,
+      cols: String(cols),
+      rows: String(rows),
+    })
+    return `/pod-exec?${query}`
+  },
 }
 
 /** 容器日志（一次性拉取，服务端以 text/plain 流式返回） */

@@ -6,6 +6,7 @@ namespace KubeSpoke.Server.Controllers
 {
     [ApiController]
     [ServiceFilter(typeof(BXExceptionFilter))]
+    [ServiceFilter(typeof(AuditFilter))]
     [Route("api/[controller]/[action]")]
     public class BaseController : ControllerBase
     {

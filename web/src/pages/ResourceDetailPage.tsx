@@ -10,6 +10,8 @@ import { deriveStatus, resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
 import { DetailDrawer } from '../components/DetailDrawer'
 import { EventsPanel } from '../components/EventsPanel'
+import { EditConfigMapModal } from './config/EditConfigMapModal'
+import type { ConfigMapEditValues } from './config/EditConfigMapModal'
 import { useResource } from '../hooks/useResource'
 import { useClusterStore } from '../store/useClusterStore'
 import { toYaml } from '../utils/yaml'
@@ -132,6 +134,17 @@ function withAnnotations(o: K8sObject, patch: Record<string, string>): K8sObject
   const next = { ...o, metadata: md }
   delete next.status
   return next
+}
+
+/** 配置字典编辑：data 与 labels 整体替换，描述写注解，其余字段（binaryData 等）原样保留 */
+function withConfigData(o: K8sObject, patch: ConfigMapEditValues): K8sObject {
+  const next: K8sObject = structuredClone(o)
+  next.data = patch.data
+  const md = { ...dict(next.metadata) }
+  if (Object.keys(patch.labels).length) md.labels = patch.labels
+  else delete md.labels
+  next.metadata = md
+  return withAnnotations(next, { [ANNO_DESC]: patch.description })
 }
 
 function withRestartAnnotation(o: K8sObject): K8sObject {
@@ -290,6 +303,7 @@ export function ResourceDetailBody({
   const [descDraft, setDescDraft] = useState('')
   const [yamlOpen, setYamlOpen] = useState(false)
   const [yamlText, setYamlText] = useState('')
+  const [cmEditOpen, setCmEditOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
   const [revealed, setRevealed] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState(false)
@@ -401,6 +415,14 @@ export function ResourceDetailBody({
     refresh()
   })
 
+  const saveConfigData = (values: ConfigMapEditValues) =>
+    run(async () => {
+      await resourceApi.applyYaml(cluster, toYaml(cleanForApply(withConfigData(await latest(), values))))
+      message.success('已保存')
+      setCmEditOpen(false)
+      refresh()
+    })()
+
   const doRecreate = () => {
     modal.confirm({
       title: `重建 ${decoded}？`,
@@ -433,7 +455,13 @@ export function ResourceDetailBody({
   const hasYamlEntry = canInfo || d.key === 'pods' || d.key === 'customresourcedefinitions'
 
   const menuItems: MenuProps['items'] = [
-    ...(canInfo ? [{ key: 'editInfo', label: '编辑信息' }, { key: 'editYaml', label: '编辑 YAML' }] : []),
+    ...(canInfo
+      ? [
+          { key: 'editInfo', label: '编辑信息' },
+          ...(d.key === 'configmaps' ? [{ key: 'editData', label: '编辑数据项' }] : []),
+          { key: 'editYaml', label: '编辑 YAML' },
+        ]
+      : []),
     ...(d.key === 'pods' ? [{ key: 'viewYaml', label: '查看 YAML' }, { key: 'editYaml', label: '编辑 YAML' }] : []),
     ...(d.key === 'customresourcedefinitions' ? [{ key: 'editYaml', label: '编辑 YAML' }] : []),
     ...(isWorkload ? [{ key: 'recreate', label: '重建' }] : []),
@@ -454,6 +482,7 @@ export function ResourceDetailBody({
 
   const onMenuClick: MenuProps['onClick'] = ({ key: k }) => {
     if (k === 'editInfo') void openInfo()
+    if (k === 'editData') setCmEditOpen(true)
     if (k === 'editYaml') {
       setYamlText(toYaml(data ?? {}))
       setYamlOpen(true)
@@ -1131,8 +1160,24 @@ export function ResourceDetailBody({
         </div>
       </Modal>
 
+      {cmEditOpen && (
+        <EditConfigMapModal
+          open
+          onClose={() => setCmEditOpen(false)}
+          name={decoded}
+          namespace={data?.metadata?.namespace ?? targetNs ?? 'default'}
+          busy={busy}
+          initial={{
+            items: Object.entries(dict(data?.data)).map(([key, value]) => ({ key, value: text(value) ?? '' })),
+            LabelRows: Object.entries(dict(data?.metadata?.labels)).map(([key, value]) => ({ key, value: text(value) ?? '' })),
+            Description: data?.metadata?.annotations?.[ANNO_DESC] ?? '',
+          }}
+          onSubmit={saveConfigData}
+        />
+      )}
+
       <Modal open={yamlOpen} title={`编辑 YAML · ${decoded}`} width={720} confirmLoading={busy} onCancel={() => setYamlOpen(false)} onOk={saveYaml} okText="提交">
-        <Input.TextArea className="kbd-mono" value={yamlText} onChange={(e) => setYamlText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
+        <Input.TextArea className="kbd-mono" spellCheck={false} value={yamlText} onChange={(e) => setYamlText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
       </Modal>
 
       <Modal open={viewOpen} title={`查看 YAML · ${decoded}`} width={720} onCancel={() => setViewOpen(false)} footer={<Button onClick={() => setViewOpen(false)}>关闭</Button>}>

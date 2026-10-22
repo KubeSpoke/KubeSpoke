@@ -319,7 +319,6 @@ export default function DashboardPage() {
               icon={<ReloadOutlined />}
               loading={loading}
               onClick={refresh}
-              style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}
             >
               刷新
             </Button>

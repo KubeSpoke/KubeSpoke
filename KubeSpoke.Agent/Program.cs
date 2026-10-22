@@ -61,7 +61,7 @@ namespace KubeSpoke.Agent
                     // Kubernetes sdk
                     var config = KubernetesClientConfiguration.InClusterConfig();
 #endif
-                    var client = new Kubernetes(config);
+                    var client = new ExecKubernetes(config);
 
                     services.AddHostedService<ClusterAgentService>()
                         .AddSingleton<Kubernetes>(client)

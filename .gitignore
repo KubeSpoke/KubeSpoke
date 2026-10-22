@@ -12,6 +12,9 @@ bin
 # agent 本机直连调试时 Serilog 落的运行日志
 /KubeSpoke.Agent/Logs/
 
+# dotnet test 的结果文件（CI 和本地 --logger trx 都会落）
+TestResults/
+
 # 界面插图的生成素材，入库的是 web/public 下的成品
 /vibe_images/
 

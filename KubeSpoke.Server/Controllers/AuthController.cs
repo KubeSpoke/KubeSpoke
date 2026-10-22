@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using KubeSpoke.Server.Data;
 using KubeSpoke.Server.Extensions;
+using KubeSpoke.Server.Filters;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,6 +33,7 @@ namespace KubeSpoke.Server.Controllers
     }
 
     [Route("api/auth")]
+    [ServiceFilter(typeof(AuditFilter))]
     public class AuthController(UserRepository users) : ControllerBase
     {
         /// <summary>

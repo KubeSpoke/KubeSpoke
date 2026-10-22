@@ -281,45 +281,6 @@ namespace KubeSpoke.Agent.Api.Tests
         }
 
         [TestMethod()]
-        public void ConnonectTestAsyncTest()
-        {
-            try
-            {
-                var ss = impl.GetContainerList(new Contracts.Dtos.Docker.GetContainerListRequest());
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail();
-                throw;
-            }
-        }
-
-        [TestMethod()]
-        public async Task GetContainerLogsTest()
-        {
-            try
-            {
-                var res = impl.GetContainerLogs(new Contracts.Dtos.Docker.GetContainerLogsRequest
-                {
-                    ClustName = "test",
-                    Id = "749b7fb09b51",
-                });
-
-                while (await res.WaitToReadAsync())
-                {
-                    var str = await res.ReadAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail();
-                throw;
-            }
-
-
-        }
-
-        [TestMethod()]
         public async Task ReadPodLogTest()
         {
             try

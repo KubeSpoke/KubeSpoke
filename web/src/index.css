@@ -2,8 +2,8 @@
 
 /* 与 web/src/theme/ksTheme.ts 的 palette 同源，改色两处一起改 */
 @theme {
-  --color-brand: #29b6a9;
-  --color-brand-hover: #3fcabf;
+  --color-brand: #2f6fed;
+  --color-brand-hover: #4f8bff;
   --color-ink: #222b45;
   --color-canvas: #f9fbfd;
   --color-shell: #242e42;
@@ -53,6 +53,15 @@ body {
   word-break: break-all;
 }
 
+/* 容器终端：xterm 要一个有固定高度的盒子才能算出行列数 */
+.pod-term {
+  height: 340px;
+  padding: 8px 10px;
+  overflow: hidden;
+  background: #1e2a3a;
+  border-radius: 6px;
+}
+
 /* 顶栏：KubeSphere 白底 + 细下边框 */
 .ks-topbar {
   height: 54px;
@@ -77,7 +86,7 @@ body {
   display: none;
 }
 
-/* 上下文左侧菜单：KubeSphere 选中态 = 浅薄荷底 + 青绿字，无左侧竖条 */
+/* 上下文左侧菜单：KubeSphere 选中态 = 浅蓝底 + 品牌蓝字，无左侧竖条 */
 .ks-menu .ant-menu-item {
   margin-inline: 8px !important;
   width: auto !important;
@@ -135,7 +144,9 @@ body {
   display: none !important;
 }
 
-.ant-table-wrapper .ant-table-tbody > tr > td {
+/* 列宽测量行（tbody 首个 height:0 的隐藏 tr）：这里的 !important padding/border 会盖掉组件内联的 0，
+   把空隙撑到表头和首行之间，必须排除 */
+.ant-table-wrapper .ant-table-tbody > tr:not(.ant-table-measure-row) > td {
   border-bottom: 1px solid #f0f2f5 !important;
   color: #36435c;
   padding-block: 15px !important;
@@ -145,7 +156,7 @@ body {
   border-bottom: none !important;
 }
 
-.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+.ant-table-wrapper .ant-table-tbody > tr:not(.ant-table-measure-row):hover > td {
   background: #f9fbfc !important;
 }
 
@@ -177,16 +188,16 @@ body {
 }
 
 .ks-tabs .ant-tabs-tab:hover {
-  color: #29b6a9;
+  color: #2f6fed;
 }
 
 .ks-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: #29b6a9 !important;
+  color: #2f6fed !important;
   font-weight: 500;
 }
 
 .ks-tabs .ant-tabs-ink-bar {
-  background: #29b6a9;
+  background: #2f6fed;
   height: 2px;
 }
 
@@ -196,8 +207,8 @@ body {
 }
 
 .ks-tabs .ant-tabs-tab-active .ks-count {
-  background: #e6f7f5;
-  color: #29b6a9;
+  background: #e8f1ff;
+  color: #2f6fed;
 }
 
 /* 服务与发现：选中行高亮（右侧详情跟随） */

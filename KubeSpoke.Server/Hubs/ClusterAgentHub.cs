@@ -53,7 +53,30 @@ namespace KubeSpoke.Server.Hubs
         {
             if (Global.RpcRequest.TryGetValue(message.RequestId, out TaskCompletionSource<RPCResponse>? task))
             {
-                task.SetResult(message);
+                // TrySetResult 而不是 SetResult：agent 重发同一条回执时后者会直接抛，
+                // 一个已经拿到答案的请求不该把这条连接弄成异常
+                if (!task.TrySetResult(message))
+                {
+                    logger.LogWarning("[回执重复] 请求 {RequestId} 已被完成过（连接 {Conn}）",
+                        message.RequestId, Context.ConnectionId);
+                }
+
+                return Task.CompletedTask;
+            }
+
+            // 走到这里说明发起方已经超时撤单。整条链路只有这一行能证明「agent 确实把回执发出来了」，
+            // 静默丢掉的话，超时到底是丢包还是没被派发永远分不清——上一轮排查就是卡在这。
+            if (Global.TryTakeLateRpc(message.RequestId, out var method, out var timedOutAt))
+            {
+                var lateMs = (int)(DateTime.UtcNow - timedOutAt).TotalMilliseconds;
+                logger.LogWarning("[回执迟到] {Method} 请求 {RequestId} 已超时撤单，{LateMs}ms 后才到达（连接 {Conn}）。"
+                    + "延迟集中在超时后一小段=派发排队；永远不到=传输丢帧",
+                    method, message.RequestId, lateMs, Context.ConnectionId);
+            }
+            else
+            {
+                logger.LogWarning("[回执无人认领] 请求 {RequestId} 从未登记或已清理（连接 {Conn}）",
+                    message.RequestId, Context.ConnectionId);
             }
 
             return Task.CompletedTask;
@@ -63,7 +86,7 @@ namespace KubeSpoke.Server.Hubs
         {
             if (Global.RpcRequest.TryGetValue(RequestId, out TaskCompletionSource<RPCResponse>? task))
             {
-                task.SetResult(new RPCResponse
+                task.TrySetResult(new RPCResponse
                 {
                     RequestId = RequestId,
                     ReturnData = stream,
@@ -115,6 +138,9 @@ namespace KubeSpoke.Server.Hubs
                     {
                         Global.OnlineUsers.Remove(cluster);
                     }
+
+                    // 计数按 ConnectionId 存，连接没了就是死数据
+                    Global.ForgetConnection(Context.ConnectionId);
                 }
             }
 

@@ -1,0 +1,75 @@
+name: Test CI
+
+# 只跑不依赖真实集群的用例：
+#   KubeSpoke.ServerTests   —— 全部（RPC 超时看门狗的记账）
+#   KubeSpoke.AgentTests    —— 只挑 LogSessionsTests（日志推流会话表）
+# AgentTests 其余用例要现场连一个真集群打 K8s 接口（本机实测 27 条挂在 404 上），
+# CI 里没有集群，全跑只会把真信号埋进一堆环境噪声。
+# 往后往 AgentTests 里加不依赖集群的测试类，记得同步改下面那条 --filter——
+# 最后一步会检查「到底有没有用例被执行」，改名或挪走不至于混成绿灯。
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # 还原单独一步：失败时一眼看得出是包的问题而不是用例的问题
+      - name: Restore
+        run: dotnet restore KubeSpoke.sln
+
+      - name: Server RPC watchdog tests
+        run: >
+          dotnet test KubeSpoke.ServerTests/KubeSpoke.ServerTests.csproj
+          --no-restore --configuration Release
+          --logger "trx;LogFileName=server.trx"
+          --results-directory TestResults
+
+      - name: Agent log session tests
+        run: >
+          dotnet test KubeSpoke.AgentTests/KubeSpoke.AgentTests.csproj
+          --no-restore --configuration Release
+          --filter "FullyQualifiedName~LogSessionsTests"
+          --logger "trx;LogFileName=agent.trx"
+          --results-directory TestResults
+
+      # 实测 .NET 10 SDK：--filter 一条都没匹配上时 dotnet test 仍然退出 0，只打一行「没有测试匹配」。
+      # 测试类改名或挪走就会变成一次谁也没跑的绿灯，所以按 trx 里的计数自己判。
+      - name: Guard against empty test run
+        if: always()
+        run: |
+          shopt -s nullglob
+          files=(TestResults/*.trx)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::TestResults 里一个 trx 都没有，测试根本没跑起来"
+            exit 1
+          fi
+          for trx in "${files[@]}"; do
+            total=$(sed -n 's/.*<Counters total="\([0-9]*\)".*/\1/p' "$trx")
+            echo "$(basename "$trx"): total=${total:-<未取到>}"
+            if [ -z "$total" ] || [ "$total" -eq 0 ]; then
+              echo "::error::$trx 里 0 条用例被执行，八成是 --filter 失效了"
+              exit 1
+            fi
+          done

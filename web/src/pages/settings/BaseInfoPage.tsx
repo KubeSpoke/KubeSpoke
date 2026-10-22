@@ -43,7 +43,6 @@ const NODES: ResourceDescriptor = {
 /** 视觉 token：与节点管理页同一套语言 */
 const BANNER_BG = 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)'
 const ICON_BRICK = 'linear-gradient(135deg, #5ea0ff, #1668dc)'
-const PRIMARY_BTN = { background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }
 
 /** 白色圆角卡片分区：标题 + 可选说明 + 右侧操作 + 内容（对齐节点管理页 Panel） */
 function Panel({ title, description, extra, children }: { title: string; description?: string; extra?: ReactNode; children: ReactNode }) {
@@ -167,7 +166,7 @@ export function ClusterBaseInfo({ cluster, onChanged }: { cluster: string; onCha
       <Panel
         title="集群信息"
         extra={
-          <Button size="small" type="primary" icon={<EditOutlined />} style={PRIMARY_BTN} onClick={openEdit}>
+          <Button size="small" type="primary" icon={<EditOutlined />} onClick={openEdit}>
             编辑信息
           </Button>
         }
@@ -206,7 +205,6 @@ export function ClusterBaseInfo({ cluster, onChanged }: { cluster: string; onCha
         open={open}
         title="编辑信息"
         okText="保存"
-        okButtonProps={{ style: PRIMARY_BTN }}
         confirmLoading={saving}
         onCancel={() => setOpen(false)}
         onOk={doSave}

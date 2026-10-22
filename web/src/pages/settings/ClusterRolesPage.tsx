@@ -356,6 +356,7 @@ function EditYamlModal({
       )}
       <Input.TextArea
         className="kbd-mono"
+        spellCheck={false}
         value={text}
         placeholder={loading ? '读取中…' : ''}
         onChange={(e) => setDraft(e.target.value)}
@@ -700,7 +701,7 @@ export default function ClusterRolesPage() {
               </div>
             </div>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }} onClick={() => setCreating(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
             创建角色
           </Button>
         </div>

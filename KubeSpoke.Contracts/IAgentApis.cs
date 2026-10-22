@@ -1,8 +1,6 @@
 ﻿using KubeSpoke.Contracts.Dtos;
-using KubeSpoke.Contracts.Dtos.Docker;
 using KubeSpoke.Contracts.Extensions;
 using KubeSpoke.Contracts.Models;
-using Docker.DotNet.Models;
 using k8s.Models;
 using System;
 using System.Collections.Generic;
@@ -134,15 +132,13 @@ namespace KubeSpoke.Contracts
 
         public IEnumerable<V1StorageClass> GetStorageClassList(GetStorageClassListRequest request);
 
-        public IList<ContainerListResponse> GetContainerList(GetContainerListRequest request);
-
-        public ChannelReader<string> GetContainerLogs(GetContainerLogsRequest request);
-
-        public bool StopContainer(RemoveContainerRequest request);
-        public bool RemoveContainer(RemoveContainerRequest request);
-        public CreateContainerResponse CreateContainer(CreateContainerRequest request);
-
         public ChannelReader<string> ReadPodLog(ReadPodLogRequest request);
+
+        /// <summary>
+        /// 打开容器交互式终端。返回的是终端输出帧（每帧 base64，因为 JSON 通道装不了裸字节），
+        /// 键盘输入不走这条 RPC，而是服务端直接往 agent 连接推 ExecInput 消息。
+        /// </summary>
+        public ChannelReader<string> StartPodExec(StartPodExecRequest request);
 
         public V1Deployment ReplaceImage(ReplaceImageRequest request);
 
@@ -188,5 +184,15 @@ namespace KubeSpoke.Contracts
 
         /// <summary>查询某对象关联事件（保留 involvedObject），供详情页「事件」标签</summary>
         public IEnumerable<Corev1Event> GetResourceEvents(GetResourceEventsRequest request);
+
+        /// <summary>
+        /// 探测集群里值得告警的异常（节点 NotReady、容器一直起不来、副本不足、Warning 事件等）。
+        /// 代理端只回归一化后的小对象，不回原始 k8s 资源，去重和落库由服务端自己做；
+        /// 一次要扫节点/Pod/部署/事件四类列表，所以放宽到 15s
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [MaxWaitSec(Sec = 15)]
+        public List<AlertSignal> GetAlertSignals(GetAlertSignalsRequest request);
     }
 }

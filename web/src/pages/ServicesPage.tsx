@@ -658,12 +658,12 @@ export default function ServicesPage() {
         <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
             {tab === 'services' && (
-              <Button type="primary" icon={<PlusOutlined />} style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }} onClick={() => setCreateOpen(true)}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
                 创建 Service
               </Button>
             )}
             {tab === 'ingresses' && (
-              <Button type="primary" icon={<PlusOutlined />} style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }} onClick={() => setCreateOpen(true)}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
                 创建 Ingress
               </Button>
             )}
@@ -957,6 +957,7 @@ export default function ServicesPage() {
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>保存将按 YAML 替换集群中的该资源。</Typography.Text>
         <Input.TextArea
           className="kbd-mono mt-2"
+          spellCheck={false}
           value={yamlText?.text ?? ''}
           onChange={(e) => setYamlText((v) => (v ? { ...v, text: e.target.value } : v))}
           autoSize={{ minRows: 16, maxRows: 26 }}

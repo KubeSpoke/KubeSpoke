@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { DetailDrawer } from '../components/DetailDrawer'
 import { EventsPanel } from '../components/EventsPanel'
 import { PodLogStream } from '../components/PodLogStream'
+import { PodTerminal } from '../components/PodTerminal'
 import { clusterApi, containerLogsUrl } from '../api/cluster'
 import { resourceApi } from '../api/resources'
 import type { K8sObject } from '../api/resources'
@@ -459,7 +460,7 @@ export function PodDetailBody({
         />
 
       <Modal open={yamlOpen} title={`编辑 YAML · ${pod}`} width={720} confirmLoading={busy} onCancel={() => setYamlOpen(false)} onOk={saveYaml} okText="提交">
-        <Input.TextArea className="kbd-mono" value={yamlText} onChange={(e) => setYamlText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
+        <Input.TextArea className="kbd-mono" spellCheck={false} value={yamlText} onChange={(e) => setYamlText(e.target.value)} autoSize={{ minRows: 16, maxRows: 26 }} style={{ fontSize: 12 }} />
       </Modal>
 
       <Modal open={viewOpen} title={`查看 YAML · ${pod}`} width={720} onCancel={() => setViewOpen(false)} footer={<Button onClick={() => setViewOpen(false)}>关闭</Button>}>
@@ -625,12 +626,13 @@ function ContainerCard({
             key: 'term',
             label: '终端',
             children: (
-              <div>
-                <Alert type="info" showIcon message="容器终端需要集群 exec 通道，暂未接入" description="控制台未代理 kubectl exec，暂时无法在这里打开交互式终端。" />
-                <Button className="mt-3" size="small" type="primary" disabled>
-                  打开终端
-                </Button>
-              </div>
+              <PodTerminal
+                cluster={cluster}
+                namespace={ns}
+                pod={pod}
+                container={cname}
+                running={stateKey === 'running'}
+              />
             ),
           },
         ]}

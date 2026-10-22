@@ -8,20 +8,19 @@ import {
   RightOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
-import { App, Button, Dropdown, Form, Input, Modal, Progress, Select, Table, Tabs, Typography } from 'antd'
+import { App, Button, Dropdown, Form, Input, Modal, Select, Table, Tabs, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { clusterApi } from '../api/cluster'
+import { useSearchParams } from 'react-router-dom'
 import { DeploymentDetailDrawer } from './DeploymentDetailPage'
 import { PodDetailDrawer } from './PodDetailPage'
 import { ResourceDetailDrawer } from './ResourceDetailPage'
 import { deriveStatus, resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
-import { resourceDescriptors, clusterPath } from '../config/nav'
+import { resourceDescriptors } from '../config/nav'
 import type { ResourceDescriptor } from '../config/nav'
 import { useResource } from '../hooks/useResource'
 import { useClusterStore } from '../store/useClusterStore'
-import { bytes, cpuCores, datetime, percent } from '../utils/format'
+import { datetime } from '../utils/format'
 import { toYaml } from '../utils/yaml'
 import CreateDeploymentModal from './workloads/CreateDeploymentModal'
 
@@ -215,48 +214,12 @@ interface Row {
   name: string
 }
 
-interface Metrics {
-  name?: string
-  usage?: { cpu?: string; memory?: string }
-}
-
 interface Overview {
   rows: Row[]
   counts: Record<string, { total: number; ready: number }>
-  usage: { cpuUsed: number; cpuTotal: number; memUsed: number; memTotal: number; diskTotal: number }
-  metricsAvailable: boolean
-  podRunning: number
-  podTotal: number
-}
-
-/** 右侧竖排面板 */
-function Panel({ title, extra, children }: { title: string; extra?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
-        {extra}
-      </div>
-      <div className="px-4 py-3">{children}</div>
-    </div>
-  )
-}
-
-function Ring({ pct, color }: { pct: number | null; color: string }) {
-  return (
-    <Progress
-      type="dashboard"
-      size={56}
-      percent={pct ?? 0}
-      strokeColor={color}
-      strokeWidth={10}
-      format={() => (pct === null ? <span style={{ fontSize: 11, color: '#b3bdcc' }}>无数据</span> : <span style={{ fontSize: 13, fontWeight: 600 }}>{pct}%</span>)}
-    />
-  )
 }
 
 export default function WorkloadsPage() {
-  const navigate = useNavigate()
   const { message, modal } = App.useApp()
   const cluster = useClusterStore((s) => s.cluster)
   const namespace = useClusterStore((s) => s.namespace)
@@ -264,15 +227,12 @@ export default function WorkloadsPage() {
   const { data, error, loading, refresh } = useResource<Overview | null>(
     async () => {
       if (!cluster) return null
-      const [deps, sts, ds, jobs, cj, pods, nodes, metrics] = await Promise.all([
+      const [deps, sts, ds, jobs, cj] = await Promise.all([
         resourceApi.list(cluster, DEPLOYMENTS).catch(() => [] as K8sObject[]),
         resourceApi.list(cluster, resourceDescriptors.statefulsets).catch(() => [] as K8sObject[]),
         resourceApi.list(cluster, resourceDescriptors.daemonsets).catch(() => [] as K8sObject[]),
         resourceApi.list(cluster, resourceDescriptors.jobs).catch(() => [] as K8sObject[]),
         resourceApi.list(cluster, resourceDescriptors.cronjobs).catch(() => [] as K8sObject[]),
-        resourceApi.list(cluster, resourceDescriptors.pods).catch(() => [] as K8sObject[]),
-        clusterApi.nodes(cluster).catch(() => [] as K8sObject[]),
-        clusterApi.nodeMetrics(cluster).catch(() => [] as Metrics[]),
       ])
       const byKind: Record<string, K8sObject[]> = {
         deployments: toItems(deps),
@@ -299,20 +259,7 @@ export default function WorkloadsPage() {
         }
         counts[k.d.key] = { total: items.length, ready }
       }
-      const cpuTotal = (nodes ?? []).reduce((s, n) => s + cpuCores((n.status as { allocatable?: { cpu?: string } } | undefined)?.allocatable?.cpu), 0)
-      const memTotal = (nodes ?? []).reduce((s, n) => s + bytes((n.status as { allocatable?: { memory?: string } } | undefined)?.allocatable?.memory), 0)
-      const diskTotal = (nodes ?? []).reduce((s, n) => s + bytes((n.status as { allocatable?: { ['ephemeral-storage']?: string } } | undefined)?.allocatable?.['ephemeral-storage']), 0)
-      const cpuUsed = (metrics ?? []).reduce((s, m) => s + cpuCores(m.usage?.cpu), 0)
-      const memUsed = (metrics ?? []).reduce((s, m) => s + bytes(m.usage?.memory), 0)
-      const podList = toItems(pods)
-      return {
-        rows,
-        counts,
-        usage: { cpuUsed, cpuTotal, memUsed, memTotal, diskTotal },
-        metricsAvailable: (metrics ?? []).length > 0,
-        podRunning: podList.filter((p) => (p.status as { phase?: string } | undefined)?.phase === 'Running').length,
-        podTotal: podList.length,
-      }
+      return { rows, counts }
     },
     [cluster],
   )
@@ -511,281 +458,227 @@ export default function WorkloadsPage() {
 
   const createItems = KINDS.map((k) => ({ key: k.d.key, label: `创建 ${k.short}` }))
 
-  const u = data?.usage
-  const cpuPct = data?.metricsAvailable && u?.cpuTotal ? percent(u.cpuUsed, u.cpuTotal) : null
-  const memPct = data?.metricsAvailable && u?.memTotal ? percent(u.memUsed, u.memTotal) : null
-  const podPct = data?.podTotal ? percent(data.podRunning, data.podTotal) : null
-
   return (
-    <div className="flex items-start gap-4">
-      {/* 左：主区 */}
-      <div className="min-w-0 flex-1 space-y-4">
-        {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error} <Button size="small" onClick={refresh}>重试</Button>
-          </div>
-        )}
+    <div className="space-y-4">
+      {error && (
+        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error} <Button size="small" onClick={refresh}>重试</Button>
+        </div>
+      )}
 
-        {/* 页头横幅 */}
-        <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
-        >
-          <div className="flex items-center gap-4">
-            <span
-              className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
-            >
-              <DeploymentUnitOutlined />
-            </span>
-            <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>工作负载</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
-                管理集群中的各类工作负载，包括 Deployment、StatefulSet、DaemonSet、Job 等。
-              </div>
+      {/* 页头横幅 */}
+      <div
+        className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
+        style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+      >
+        <div className="flex items-center gap-4">
+          <span
+            className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
+            style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+          >
+            <DeploymentUnitOutlined />
+          </span>
+          <div>
+            <div className="text-xl font-bold" style={{ color: '#15233a' }}>工作负载</div>
+            <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              管理集群中的各类工作负载，包括 Deployment、StatefulSet、DaemonSet、Job 等。
             </div>
           </div>
-          <img
-            src="/login-hero.svg"
-            alt=""
-            className="pointer-events-none hidden h-24 w-auto lg:block"
-            style={{ objectFit: 'contain', objectPosition: 'right', maskImage: 'linear-gradient(90deg, transparent, #000 30%)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 30%)' }}
-          />
         </div>
-
-        <Tabs
-          activeKey={tab}
-          onChange={(k) => { setTab(k); setSelected([]) }}
-          items={[{ key: 'all', label: '全部' }, ...KINDS.map((k) => ({ key: k.d.key, label: k.short }))]}
+        <img
+          src="/login-hero.svg"
+          alt=""
+          className="pointer-events-none hidden h-24 w-auto lg:block"
+          style={{ objectFit: 'contain', objectPosition: 'right', maskImage: 'linear-gradient(90deg, transparent, #000 30%)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 30%)' }}
         />
-
-        {/* 统计卡 */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-          {KINDS.map((k) => {
-            const c = data?.counts[k.d.key] ?? { total: 0, ready: 0 }
-            return (
-              <div
-                key={k.d.key}
-                className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-                style={{ border: `1px solid ${tab === k.d.key ? k.color : '#e6ebf1'}` }}
-                onClick={() => { setTab(k.d.key); setSelected([]) }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: k.bg, color: k.color }}>
-                    {k.icon}
-                  </span>
-                  <div>
-                    <div className="text-xs" style={{ color: '#8f9aa9' }}>{k.short}</div>
-                    <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-                      {c.total}
-                      <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>就绪 {c.ready}</span>
-                    </div>
-                  </div>
-                </div>
-                <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-              </div>
-            )
-          })}
-        </div>
-
-        {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <Dropdown menu={{ items: createItems, onClick: ({ key }) => setCreateKind(String(key)) }}>
-              <Button type="primary" style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}>
-                创建工作负载 <DownOutlined />
-              </Button>
-            </Dropdown>
-            <Dropdown
-              disabled={!selected.length}
-              menu={{
-                items: [{ key: 'delete', label: `批量删除（${selected.length}）`, danger: true, onClick: batchDelete }],
-              }}
-            >
-              <Button disabled={!selected.length}>
-                批量操作 <DownOutlined />
-              </Button>
-            </Dropdown>
-            <Select
-              allowClear
-              placeholder="全部命名空间"
-              style={{ width: 160 }}
-              value={filterNs}
-              onChange={setFilterNs}
-              options={nsOptions}
-            />
-            <Select
-              allowClear
-              placeholder="全部状态"
-              style={{ width: 120 }}
-              value={filterStatus}
-              onChange={setFilterStatus}
-              options={['运行中', '更新中', '等待中', '已完成', '失败', '已停止', '正常'].map((t) => ({ label: t, value: t }))}
-            />
-            <Input.Search
-              className="ml-auto"
-              style={{ width: 220 }}
-              placeholder="搜索工作负载名称..."
-              allowClear
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading} />
-          </div>
-          <Table<Row>
-            rowKey="key"
-            size="middle"
-            loading={loading || busy}
-            dataSource={rows}
-            scroll={{ x: 1080 }}
-            rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
-            pagination={{
-              defaultPageSize: 10,
-              showSizeChanger: true,
-              pageSizeOptions: [10, 20, 50, 100],
-              showTotal: (t) => `共 ${t} 条`,
-            }}
-            columns={[
-              {
-                title: '名称',
-                dataIndex: 'name',
-                sorter: (a, b) => a.name.localeCompare(b.name),
-                render: (_, r) => {
-                  const k = KIND_BY_KEY[r.d.key]
-                  return (
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: k.bg, color: k.color }}>
-                        {k.icon}
-                      </span>
-                      <div className="min-w-0">
-                        <a className="truncate font-medium" style={{ color: '#15233a' }} onClick={() => openDetail(r)}>
-                          {r.name}
-                        </a>
-                        <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
-                      </div>
-                    </div>
-                  )
-                },
-              },
-              {
-                title: '类型',
-                width: 120,
-                filters: KINDS.map((k) => ({ text: k.short, value: k.d.key })),
-                onFilter: (v, r) => r.d.key === v,
-                render: (_, r) => {
-                  const k = KIND_BY_KEY[r.d.key]
-                  return (
-                    <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: k.bg, color: k.color }}>
-                      {r.d.kind}
-                    </span>
-                  )
-                },
-              },
-              { title: '命名空间', dataIndex: 'ns', width: 130 },
-              {
-                title: '镜像',
-                ellipsis: true,
-                render: (_, r) => <span className="kbd-mono text-xs">{mainImage(r.d, r.o)}</span>,
-              },
-              {
-                title: '副本数',
-                width: 90,
-                render: (_, r) => replicaText(r.d, r.o),
-              },
-              {
-                title: '状态',
-                width: 110,
-                render: (_, r) => {
-                  const s = rowStatus(r.d, r.o)
-                  return (
-                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[s.tone] }} />
-                      <span style={{ color: '#15233a' }}>{s.text}</span>
-                    </span>
-                  )
-                },
-              },
-              {
-                title: '创建时间',
-                width: 160,
-                sorter: (a, b) => (a.o.metadata?.creationTimestamp ?? '').localeCompare(b.o.metadata?.creationTimestamp ?? ''),
-                render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
-              },
-              {
-                title: '操作',
-                width: 120,
-                render: (_, r) => (
-                  <span className="whitespace-nowrap">
-                    <Button size="small" type="link" style={{ paddingLeft: 0 }} onClick={() => openDetail(r)}>
-                      查看
-                    </Button>
-                    <Dropdown
-                      menu={{
-                        items: [
-                          { key: 'info', label: '编辑信息', onClick: () => openInfo(r) },
-                          { key: 'yaml', label: '编辑 YAML', onClick: () => void openYaml(r) },
-                          ...(r.d.key === 'cronjobs' ? [] : [{ key: 'recreate', label: '重新创建', onClick: () => void recreate(r) }]),
-                          { key: 'delete', label: '删除', danger: true, onClick: () => confirmDelete(r) },
-                        ],
-                      }}
-                      trigger={['click']}
-                    >
-                      <Button size="small" type="link">
-                        更多 <DownOutlined />
-                      </Button>
-                    </Dropdown>
-                  </span>
-                ),
-              },
-            ]}
-          />
-        </div>
       </div>
 
-      {/* 右：信息栏 */}
-      <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
-        <Panel title="资源使用率" extra={<a style={{ fontSize: 12 }} onClick={() => navigate(clusterPath(cluster, 'overview'))}>查看详情 <RightOutlined style={{ fontSize: 10 }} /></a>}>
-          <div className="space-y-4">
-            {[
-              { label: 'CPU', pct: cpuPct, color: '#2f6fed', sub: u?.cpuTotal ? `${data?.metricsAvailable ? u.cpuUsed.toFixed(1) : '-'} / ${u.cpuTotal.toFixed(0)} vCPU` : '-' },
-              { label: '内存', pct: memPct, color: '#59c492', sub: u?.memTotal ? `${data?.metricsAvailable ? (u.memUsed / 1024 ** 3).toFixed(1) : '-'} / ${(u.memTotal / 1024 ** 3).toFixed(0)} GiB` : '-' },
-              { label: '存储', pct: null, color: '#7c5cff', sub: u?.diskTotal ? `- / ${(u.diskTotal / 1024 ** 3).toFixed(0)} GiB` : '-' },
-              { label: 'Pod 运行率', pct: podPct, color: '#29b6a9', sub: data?.podTotal ? `${data.podRunning} / ${data.podTotal}` : '-' },
-            ].map((it) => (
-              <div key={it.label} className="flex items-center gap-3">
-                <Ring pct={it.pct} color={it.color} />
+      <Tabs
+        activeKey={tab}
+        onChange={(k) => { setTab(k); setSelected([]) }}
+        items={[{ key: 'all', label: '全部' }, ...KINDS.map((k) => ({ key: k.d.key, label: k.short }))]}
+      />
+
+      {/* 统计卡 */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+        {KINDS.map((k) => {
+          const c = data?.counts[k.d.key] ?? { total: 0, ready: 0 }
+          return (
+            <div
+              key={k.d.key}
+              className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
+              style={{ border: `1px solid ${tab === k.d.key ? k.color : '#e6ebf1'}` }}
+              onClick={() => { setTab(k.d.key); setSelected([]) }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: k.bg, color: k.color }}>
+                  {k.icon}
+                </span>
                 <div>
-                  <div className="text-sm font-medium" style={{ color: '#15233a' }}>{it.label}</div>
-                  <div className="text-xs" style={{ color: '#8f9aa9' }}>{it.sub}</div>
+                  <div className="text-xs" style={{ color: '#8f9aa9' }}>{k.short}</div>
+                  <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
+                    {c.total}
+                    <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>就绪 {c.ready}</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </Panel>
+              <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
+            </div>
+          )
+        })}
+      </div>
 
-        <Panel title="常用操作">
-          <div className="space-y-1">
-            {createItems.map((c) => {
-              const k = KIND_BY_KEY[c.key]
-              return (
-                <div key={c.key} className="flex cursor-pointer items-center gap-3 rounded px-2 py-2 text-sm hover:bg-[#f4f8fd]" style={{ color: '#15233a' }} onClick={() => setCreateKind(c.key)}>
-                  <span className="grid size-7 place-items-center rounded-md text-sm" style={{ background: k.bg, color: k.color }}>{k.icon}</span>
-                  {c.label}
-                  <RightOutlined className="ml-auto" style={{ fontSize: 10, color: '#c9d2de' }} />
-                </div>
-              )
-            })}
-          </div>
-        </Panel>
-
-        <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
-            工作负载是运行在 Kubernetes 中的应用实例，通过合理的资源配置和健康检查可以保证应用的稳定运行。
-          </div>
-          <a className="mt-2 inline-block text-[13px]" style={{ color: '#2f6fed' }} onClick={() => navigate(clusterPath(cluster, 'overview'))}>
-            了解更多 →
-          </a>
-        </Panel>
+      {/* 表格卡片 */}
+      <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+          <Dropdown menu={{ items: createItems, onClick: ({ key }) => setCreateKind(String(key)) }}>
+            <Button type="primary" style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}>
+              创建工作负载 <DownOutlined />
+            </Button>
+          </Dropdown>
+          <Dropdown
+            disabled={!selected.length}
+            menu={{
+              items: [{ key: 'delete', label: `批量删除（${selected.length}）`, danger: true, onClick: batchDelete }],
+            }}
+          >
+            <Button disabled={!selected.length}>
+              批量操作 <DownOutlined />
+            </Button>
+          </Dropdown>
+          <Select
+            allowClear
+            placeholder="全部命名空间"
+            style={{ width: 160 }}
+            value={filterNs}
+            onChange={setFilterNs}
+            options={nsOptions}
+          />
+          <Select
+            allowClear
+            placeholder="全部状态"
+            style={{ width: 120 }}
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={['运行中', '更新中', '等待中', '已完成', '失败', '已停止', '正常'].map((t) => ({ label: t, value: t }))}
+          />
+          <Input.Search
+            className="ml-auto"
+            style={{ width: 220 }}
+            placeholder="搜索工作负载名称..."
+            allowClear
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading} />
+        </div>
+        <Table<Row>
+          rowKey="key"
+          size="middle"
+          loading={loading || busy}
+          dataSource={rows}
+          scroll={{ x: 1080 }}
+          rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
+          pagination={{
+            defaultPageSize: 10,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            showTotal: (t) => `共 ${t} 条`,
+          }}
+          columns={[
+            {
+              title: '名称',
+              dataIndex: 'name',
+              sorter: (a, b) => a.name.localeCompare(b.name),
+              render: (_, r) => {
+                const k = KIND_BY_KEY[r.d.key]
+                return (
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: k.bg, color: k.color }}>
+                      {k.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <a className="truncate font-medium" style={{ color: '#15233a' }} onClick={() => openDetail(r)}>
+                        {r.name}
+                      </a>
+                      <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
+                    </div>
+                  </div>
+                )
+              },
+            },
+            {
+              title: '类型',
+              width: 120,
+              filters: KINDS.map((k) => ({ text: k.short, value: k.d.key })),
+              onFilter: (v, r) => r.d.key === v,
+              render: (_, r) => {
+                const k = KIND_BY_KEY[r.d.key]
+                return (
+                  <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: k.bg, color: k.color }}>
+                    {r.d.kind}
+                  </span>
+                )
+              },
+            },
+            { title: '命名空间', dataIndex: 'ns', width: 130 },
+            {
+              title: '镜像',
+              ellipsis: true,
+              render: (_, r) => <span className="kbd-mono text-xs">{mainImage(r.d, r.o)}</span>,
+            },
+            {
+              title: '副本数',
+              width: 90,
+              render: (_, r) => replicaText(r.d, r.o),
+            },
+            {
+              title: '状态',
+              width: 110,
+              render: (_, r) => {
+                const s = rowStatus(r.d, r.o)
+                return (
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                    <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[s.tone] }} />
+                    <span style={{ color: '#15233a' }}>{s.text}</span>
+                  </span>
+                )
+              },
+            },
+            {
+              title: '创建时间',
+              width: 160,
+              sorter: (a, b) => (a.o.metadata?.creationTimestamp ?? '').localeCompare(b.o.metadata?.creationTimestamp ?? ''),
+              render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
+            },
+            {
+              title: '操作',
+              width: 120,
+              render: (_, r) => (
+                <span className="whitespace-nowrap">
+                  <Button size="small" type="link" style={{ paddingLeft: 0 }} onClick={() => openDetail(r)}>
+                    查看
+                  </Button>
+                  <Dropdown
+                    menu={{
+                      items: [
+                        { key: 'info', label: '编辑信息', onClick: () => openInfo(r) },
+                        { key: 'yaml', label: '编辑 YAML', onClick: () => void openYaml(r) },
+                        ...(r.d.key === 'cronjobs' ? [] : [{ key: 'recreate', label: '重新创建', onClick: () => void recreate(r) }]),
+                        { key: 'delete', label: '删除', danger: true, onClick: () => confirmDelete(r) },
+                      ],
+                    }}
+                    trigger={['click']}
+                  >
+                    <Button size="small" type="link">
+                      更多 <DownOutlined />
+                    </Button>
+                  </Dropdown>
+                </span>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {/* 创建：Deployment 走结构化表单，其余走 YAML 模板 */}

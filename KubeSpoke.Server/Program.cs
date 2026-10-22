@@ -34,6 +34,8 @@ builder.Services.AddSignalR(options =>
 builder.Services.AddSingleton<BXExceptionFilter>();
 builder.Services.AddSingleton<GitlabEventHandler>();
 builder.Services.AddSingleton<YunXiaoClient>();
+// 告警采集：每分钟向每个在线集群要一次异常清单
+builder.Services.AddHostedService<KubeSpoke.Server.Services.AlertCollector>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -124,6 +126,8 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+// 审计要回放写请求的正文，这行必须排在控制器之前
+app.UseAuditBodyBuffer();
 app.UseAuthentication();
 app.UseAuthorization();
 // 口令还是建号时那个值的账号，改密之前其他接口一律拦住
@@ -139,6 +143,12 @@ app.MapHub<ClusterAgentHub>("/cluster-agent", options =>
 });
 
 app.MapHub<LogHub>("/pod-log", options =>
+{
+    options.ApplicationMaxBufferSize = 0;
+    options.TransportMaxBufferSize = 0;
+});
+
+app.MapHub<ExecHub>("/pod-exec", options =>
 {
     options.ApplicationMaxBufferSize = 0;
     options.TransportMaxBufferSize = 0;

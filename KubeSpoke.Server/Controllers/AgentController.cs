@@ -105,16 +105,8 @@ namespace KubeSpoke.Server.Controllers
                           mountPath: /app/Logs
                         - name: apps
                           mountPath: /apps
-                      #  - mountPath: /var/run/docker.sock
-                      #    name: docker-volume
                   serviceAccountName: kubespoke-agent
                   volumes:
-                  #  - name: docker-volume
-                     # hostPath:
-                        # 宿主上目录位置
-                        #path: /var/run/docker.sock
-                        # 此字段为可选
-                        #type: Socket
                     - name: logs
                       hostPath:
                         path: /apps/devops-agent/logs
