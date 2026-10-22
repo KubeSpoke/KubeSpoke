@@ -13,7 +13,7 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-kubespoke}"
 # 钉具体版本号，不用 :latest —— 打 tag 发版过去并不会刷新 :latest，钉住才不会装到旧版。
 # 发新版本时这里要一并改（README 的 docker run 同理）。
-IMAGE="${IMAGE:-crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.1.0}"
+IMAGE="${IMAGE:-crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.2.0}"
 INGRESS_HOST="${INGRESS_HOST:-}"
 INGRESS_CLASS="${INGRESS_CLASS:-nginx}"
 # 控制台账号是 SQLite（/app/App_Data/kubespoke.db），不落卷就随 pod 重建消失。

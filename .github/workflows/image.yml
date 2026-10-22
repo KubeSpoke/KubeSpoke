@@ -3,8 +3,8 @@ name: Image CI
 # 一个版本号同时出两个镜像，agent 与 server 不允许各自发版、各自打 tag。
 # 发布：
 #   git tag v0.1.0 && git push origin v0.1.0
-#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-agent:0.1.0
-#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.1.0
+#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-agent:0.2.0
+#     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.2.0
 #   两条路径都会同时刷新两个镜像的 :latest；不带版本号的手动触发只刷 :latest，用于验证流水线本身。
 # 注意：对外交付物（deploy-server.sh 的默认 IMAGE、README 的 docker run）刻意钉在具体版本号上，
 #       发新版本时要一并改，别让它们停在旧版。
