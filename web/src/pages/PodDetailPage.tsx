@@ -8,6 +8,7 @@ import { DetailDrawer } from '../components/DetailDrawer'
 import { EventsPanel } from '../components/EventsPanel'
 import { PodLogStream } from '../components/PodLogStream'
 import { PodTerminal } from '../components/PodTerminal'
+import { PodFiles } from '../components/PodFiles'
 import { clusterApi, containerLogsUrl } from '../api/cluster'
 import { resourceApi } from '../api/resources'
 import type { K8sObject } from '../api/resources'
@@ -627,6 +628,19 @@ function ContainerCard({
             label: '终端',
             children: (
               <PodTerminal
+                cluster={cluster}
+                namespace={ns}
+                pod={pod}
+                container={cname}
+                running={stateKey === 'running'}
+              />
+            ),
+          },
+          {
+            key: 'files',
+            label: '文件',
+            children: (
+              <PodFiles
                 cluster={cluster}
                 namespace={ns}
                 pod={pod}

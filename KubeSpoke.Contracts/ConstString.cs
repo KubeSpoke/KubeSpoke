@@ -23,6 +23,13 @@ namespace KubeSpoke.Contracts
         /// <summary>服务端→agent：关掉某次 exec 会话，浏览器断开时必须发，否则容器里的 shell 会一直挂着</summary>
         public const string AGENT_EXEC_CLOSE = "ExecClose";
 
+        /// <summary>
+        /// 服务端→agent：只关容器侧的 stdin，会话留着。
+        /// 上传写完最后一个字节要发这一下——容器里的 cat 拿到 EOF 才会退出并让文件落定，
+        /// 而会话还得活着，好让服务端等到 cat 真正结束、把失败原因带回来。
+        /// </summary>
+        public const string AGENT_EXEC_CLOSE_STDIN = "ExecCloseStdIn";
+
         /// <summary>服务端→agent：改终端宽高，转成 JSON 写进 exec 的 error 通道</summary>
         public const string AGENT_EXEC_RESIZE = "ExecResize";
 

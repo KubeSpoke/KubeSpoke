@@ -6,12 +6,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { NameCell } from '../components/PageShell'
 import { DetailDrawer } from '../components/DetailDrawer'
 import { EventsPanel } from '../components/EventsPanel'
+import { MonitorPanel } from '../components/MonitorPanel'
 import { clusterApi } from '../api/cluster'
 import { deriveStatus, resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
 import { useResource } from '../hooks/useResource'
 import { useClusterStore } from '../store/useClusterStore'
-import { cpu, datetime, memory } from '../utils/format'
+import { bytes, cpu, cpuCores, datetime, memory } from '../utils/format'
 import { clusterPath } from '../config/nav'
 import type { ResourceDescriptor } from '../config/nav'
 import type { V1Node } from '../types/k8s'
@@ -180,6 +181,20 @@ export function NodeDetailBody({
                     { title: '容量', dataIndex: 'cap' },
                     { title: '可分配', dataIndex: 'alloc' },
                   ]}
+                />
+              </div>
+            ),
+          },
+          {
+            key: 'monitor',
+            label: '监控',
+            children: (
+              <div className="p-4">
+                <MonitorPanel
+                  cluster={cluster}
+                  kind="node"
+                  name={name}
+                  capacity={node ? { cpu: cpuCores(cap.cpu), mem: bytes(cap.memory) } : undefined}
                 />
               </div>
             ),

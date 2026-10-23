@@ -16,6 +16,7 @@ import NodeDetailPage from './pages/NodeDetailPage'
 import NodesPage from './pages/NodesPage'
 import PodDetailPage from './pages/PodDetailPage'
 import ProjectsPage from './pages/ProjectsPage'
+import RecycleBinPage from './pages/RecycleBinPage'
 import ResourceDetailPage from './pages/ResourceDetailPage'
 import ResourceListPage from './pages/ResourceListPage'
 import ServicesPage from './pages/ServicesPage'
@@ -166,6 +167,7 @@ export default function App() {
           {/* 平台运维：跨集群的告警与写操作留痕 */}
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/audit" element={<AuditPage />} />
+          <Route path="/recycle" element={<RecycleBinPage />} />
 
           {/* 控制台自身参数，不属于任何集群 */}
           <Route path="/settings" element={<SystemSettingsPage />} />

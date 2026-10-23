@@ -19,6 +19,7 @@ namespace KubeSpoke.Server.Data
 
     /// <summary>
     /// 一条控制台的写操作留痕。只记非 GET 请求和终端开关，读操作不进库。
+    /// 超过 <see cref="AuditRepository.RetentionDays"/> 天的旧记录由写入路径定期删掉，表不会一直长。
     /// </summary>
     public class AuditEntity
     {
@@ -26,7 +27,7 @@ namespace KubeSpoke.Server.Data
 
         public DateTime TimeUtc { get; set; }
 
-        /// <summary>控制台账号名，未登录时为空。</summary>
+        /// <summary>控制台账号名；登录失败时也记被尝试的那个账号名（此时会话还没认证，别处取不到）。其它未登录场景为空。</summary>
         public string Actor { get; set; } = "";
 
         /// <summary>操作名：集群类取被调用的接口名（ScaleDeployment 等），其余取 控制器/动作。</summary>
@@ -44,7 +45,7 @@ namespace KubeSpoke.Server.Data
         public string Ip { get; set; } = "";
         public bool Success { get; set; } = true;
 
-        /// <summary>失败时的异常消息。</summary>
+        /// <summary>失败原因：异常消息，或登录一类接口直接回的失败提示。</summary>
         public string Message { get; set; } = "";
     }
 
@@ -131,6 +132,43 @@ namespace KubeSpoke.Server.Data
     }
 
     /// <summary>
+    /// 一条回收站记录：删除之前先把对象抓下来存成可重新 apply 的 YAML。
+    /// 抓不到（读接口失败、对象过大、Pod/Secret 这类不收的种类）就不落库，删除照旧执行。
+    /// </summary>
+    public class DeletedObjectEntity
+    {
+        public long Id { get; set; }
+
+        public DateTime TimeUtc { get; set; }
+
+        /// <summary>按下删除的人。</summary>
+        public string Actor { get; set; } = "";
+
+        public string Cluster { get; set; } = "";
+        public string Namespace { get; set; } = "";
+
+        /// <summary>K8s Kind，列表页用来分组和显示。</summary>
+        public string Kind { get; set; } = "";
+
+        /// <summary>被删掉的对象名。</summary>
+        public string Name { get; set; } = "";
+
+        /// <summary>通用资源接口坐标，还原前用它再读一次集群，确认没有同名对象挡路。</summary>
+        public string Group { get; set; } = "";
+        public string Version { get; set; } = "";
+        public string Plural { get; set; } = "";
+
+        /// <summary>还原时要发给 Agent 的对象原文，已剥掉 uid / resourceVersion / status。</summary>
+        public string Yaml { get; set; } = "";
+
+        /// <summary>过期时间，到点由回收站自己清掉。</summary>
+        public DateTime ExpiresUtc { get; set; }
+
+        /// <summary>已经还原过一次的时间；还原不删记录，留着好追溯是谁恢复的。</summary>
+        public DateTime? RestoredUtc { get; set; }
+    }
+
+    /// <summary>
     /// 一条控制台设置。值统一存字符串，再加新项不用动表。
     /// </summary>
     public class SettingEntity
@@ -153,6 +191,8 @@ namespace KubeSpoke.Server.Data
 
         public DbSet<SettingEntity> Settings => Set<SettingEntity>();
 
+        public DbSet<DeletedObjectEntity> DeletedObjects => Set<DeletedObjectEntity>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<UserEntity>().HasIndex(u => u.Username).IsUnique();
@@ -160,6 +200,8 @@ namespace KubeSpoke.Server.Data
             builder.Entity<AlertEntity>().HasIndex(a => a.Fingerprint).IsUnique();
             builder.Entity<AlertEntity>().HasIndex(a => a.ResolvedUtc);
             builder.Entity<AlertNotifyLogEntity>().HasIndex(l => l.TimeUtc);
+            builder.Entity<DeletedObjectEntity>().HasIndex(d => d.TimeUtc);
+            builder.Entity<DeletedObjectEntity>().HasIndex(d => d.ExpiresUtc);
             builder.Entity<SettingEntity>().HasKey(s => s.Key);
         }
     }

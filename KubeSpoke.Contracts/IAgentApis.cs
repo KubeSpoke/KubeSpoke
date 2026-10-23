@@ -140,6 +140,33 @@ namespace KubeSpoke.Contracts
         /// </summary>
         public ChannelReader<string> StartPodExec(StartPodExecRequest request);
 
+        // ---- 容器内文件浏览与传输 ----
+        // 全部建在 exec 之上（和 kubectl cp 同一件事），所以容器里只要有 sh/ls/cat 就够了，
+        // 不需要 sshfs、不需要挂载、不需要往集群里塞任何常驻组件。
+
+        /// <summary>列一个目录。要在容器里跑一次 ls 并等它退出，所以窗口比默认 3s 放宽</summary>
+        [MaxWaitSec(Sec = 15)]
+        public PodFileListResult ListPodFiles(ListPodFilesRequest request);
+
+        /// <summary>下载单个文件，返回文件字节帧（每帧 base64），服务端边解边写 HTTP 响应</summary>
+        public ChannelReader<string> DownloadPodFile(DownloadPodFileRequest request);
+
+        /// <summary>
+        /// 开一路上传会话，返回的是这路的收尾通道：容器里的 cat 收到 EOF 退出（或失败）才会有帧流尽，
+        /// 服务端据此判断字节是否全部写进了临时文件。字节本身由服务端推 ExecInput 灌进 stdin。
+        /// </summary>
+        public ChannelReader<string> StartPodUpload(StartPodUploadRequest request);
+
+        /// <summary>把写完成的临时文件挪到目标路径。只有确认全部字节到位后服务端才会调它。</summary>
+        [MaxWaitSec(Sec = 15)]
+        public bool MovePodFile(MovePodFileRequest request);
+
+        [MaxWaitSec(Sec = 15)]
+        public bool MakePodDirectory(MakePodDirectoryRequest request);
+
+        [MaxWaitSec(Sec = 15)]
+        public bool RemovePodFiles(RemovePodFilesRequest request);
+
         public V1Deployment ReplaceImage(ReplaceImageRequest request);
 
         public V1Pod GetPodStatus(ReadPodLogRequest request);

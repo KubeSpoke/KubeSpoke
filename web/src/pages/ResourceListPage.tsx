@@ -1,5 +1,5 @@
 import { App, Button, Dropdown, Empty, Input, Modal, Popover, Select, Table, Tag, Tooltip, Typography } from 'antd'
-import type { TableColumnsType } from 'antd'
+import type { MenuProps, TableColumnsType } from 'antd'
 import {
   AppstoreOutlined,
   CheckCircleOutlined,
@@ -37,10 +37,14 @@ type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 const ALIAS_KEY = 'kubesphere.io/alias-name'
 
 type Rec = Record<string, unknown>
+type RowMenu = NonNullable<MenuProps['items']>
 const asRec = (v: unknown): Rec => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Rec) : {})
 const asArr = (v: unknown): Rec[] => (Array.isArray(v) ? v.filter((x) => x && typeof x === 'object') as Rec[] : [])
 const asStr = (v: unknown): string => (typeof v === 'string' ? v : v === undefined || v === null ? '' : String(v))
 const num = (v: unknown): number => Number(v ?? 0) || 0
+
+/** 一次性任务名后缀：与 KsActions 的 rand5 同规则（小写字母数字） */
+const rand5 = () => Math.random().toString(36).replace(/[^a-z0-9]/g, 'x').padEnd(5, '0').slice(0, 5)
 
 const meta = (o: K8sObject): Rec => asRec(o.metadata)
 const spec = (o: K8sObject): Rec => asRec(o.spec)
@@ -81,6 +85,12 @@ function describeResource(d: ResourceDescriptor): string {
       return '持久卷是集群级存储资源，由管理员预先创建或经存储类动态供应'
     case 'storageclasses':
       return '存储类定义不同等级存储的供应参数，声明可按需动态创建卷'
+    case 'resourcequotas':
+      return '资源配额限制项目内累计的资源用量与对象数量，超出将无法创建'
+    case 'limitranges':
+      return '限制范围设定项目内容器默认与上限的资源请求，约束单个容器的用量区间'
+    case 'poddisruptionbudgets':
+      return '中断预算保证自愿中断时仍有足够容器组可用，避免驱逐时打爆副本数'
     case 'customresourcedefinitions':
       return '定制资源定义扩展 Kubernetes API，声明集群可用的自定义资源类型'
     case 'workloadtemplates':
@@ -253,6 +263,80 @@ function yamlTemplate(d: ResourceDescriptor): string {
         '    version: v1.0.0',
         '',
       ].join('\n')
+    case 'horizontalpodautoscalers':
+      return [
+        `apiVersion: ${apiVersion}`,
+        'kind: HorizontalPodAutoscaler',
+        'metadata:',
+        '  name: my-hpa',
+        '  namespace: default',
+        'spec:',
+        '  scaleTargetRef:',
+        '    apiVersion: apps/v1',
+        '    kind: Deployment',
+        '    name: my-deployment',
+        '  minReplicas: 1',
+        '  maxReplicas: 5',
+        '  metrics:',
+        '    - type: Resource',
+        '      resource:',
+        '        name: cpu',
+        '        target:',
+        '          type: Utilization',
+        '          averageUtilization: 70',
+        '',
+      ].join('\n')
+    case 'resourcequotas':
+      return [
+        `apiVersion: ${apiVersion}`,
+        'kind: ResourceQuota',
+        'metadata:',
+        '  name: my-quota',
+        '  namespace: default',
+        'spec:',
+        '  hard:',
+        '    requests.cpu: "2"',
+        '    requests.memory: 4Gi',
+        '    limits.cpu: "4"',
+        '    limits.memory: 8Gi',
+        '    pods: "20"',
+        '',
+      ].join('\n')
+    case 'limitranges':
+      return [
+        `apiVersion: ${apiVersion}`,
+        'kind: LimitRange',
+        'metadata:',
+        '  name: my-limits',
+        '  namespace: default',
+        'spec:',
+        '  limits:',
+        '    - type: Container',
+        '      defaultRequest:',
+        '        cpu: 100m',
+        '        memory: 128Mi',
+        '      default:',
+        '        cpu: 500m',
+        '        memory: 512Mi',
+        '      max:',
+        '        cpu: "2"',
+        '        memory: 2Gi',
+        '',
+      ].join('\n')
+    case 'poddisruptionbudgets':
+      return [
+        `apiVersion: ${apiVersion}`,
+        'kind: PodDisruptionBudget',
+        'metadata:',
+        '  name: my-pdb',
+        '  namespace: default',
+        'spec:',
+        '  minAvailable: 1',
+        '  selector:',
+        '    matchLabels:',
+        '      app: my-deployment',
+        '',
+      ].join('\n')
     default:
       return [
         `apiVersion: ${apiVersion}`,
@@ -345,7 +429,7 @@ interface HelperData {
 export default function ResourceListPage() {
   const { key } = useParams()
   const d = findDescriptor(key)
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const cluster = useClusterStore((s) => s.cluster)
   const namespace = useClusterStore((s) => s.namespace)
 
@@ -600,6 +684,55 @@ export default function ResourceListPage() {
     }
   }
 
+  // ------------------------------------------------------------ CronJob 专属操作
+
+  /** 立即执行：读最新对象后按 spec.jobTemplate 造一个一次性 Job 提交（无 patch RPC，统一 applyYaml） */
+  const doRunNow = (o: K8sObject) => {
+    const nm = nameOf(o)
+    const ns = nsOf(o) || undefined
+    modal.confirm({
+      title: `立即执行 ${nm}？`,
+      content: '将按定时计划的模板创建一个一次性任务，不影响后续的调度计划。',
+      okText: '执行',
+      onOk: async () => {
+        try {
+          const cj = await resourceApi.read(cluster, d, nm, ns)
+          const jobSpec = asRec(asRec(spec(cj).jobTemplate).spec)
+          if (!Object.keys(jobSpec).length) {
+            message.error('该定时任务没有可用的任务模板')
+            return
+          }
+          const jobName = `${nm}-manual-${rand5()}`
+          const metadata: Rec = { name: jobName }
+          const jobNs = nsOf(cj) || ns
+          if (jobNs) metadata.namespace = jobNs
+          const labels = asRec(meta(cj).labels)
+          if (Object.keys(labels).length) metadata.labels = labels
+          const job: K8sObject = {
+            apiVersion: 'batch/v1',
+            kind: 'Job',
+            metadata: metadata as K8sObject['metadata'],
+            spec: jobSpec,
+          }
+          await resourceApi.applyYaml(cluster, toYaml(job))
+          message.success(`已创建任务 ${jobName}`)
+          reload()
+        } catch (e) {
+          message.error((e as Error).message)
+        }
+      },
+    })
+  }
+
+  /** 行菜单：通用动作仍由 KsActions 提供（含 CronJob 的暂停 / 继续），此处只补「立即执行」 */
+  const rowMenuFor = (o: K8sObject): RowMenu => {
+    const base = (ks.menuItemsFor(o) ?? []) as RowMenu
+    if (d.key !== 'cronjobs') return base
+    const item: RowMenu[number] = { key: 'runNow', label: '立即执行', onClick: () => doRunNow(o) }
+    const delIdx = base.findIndex((it) => (it as { key?: string } | null)?.key === 'delete')
+    return delIdx < 0 ? [...base, item] : [...base.slice(0, delIdx), item, ...base.slice(delIdx)]
+  }
+
   const actionCol: TableColumnsType<K8sObject>[number] = {
     title: '操作',
     key: 'actions',
@@ -607,7 +740,7 @@ export default function ResourceListPage() {
     align: 'center',
     render: (_, o) => (
       <div onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-        <Dropdown trigger={['hover']} menu={{ items: ks.menuItemsFor(o) }}>
+        <Dropdown trigger={['hover']} menu={{ items: rowMenuFor(o) }}>
           <Button size="small" type="text" icon={<EllipsisOutlined />} />
         </Dropdown>
       </div>
@@ -1087,7 +1220,7 @@ export default function ResourceListPage() {
                     <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR[aStatus.tone] }} />
                     {aStatus.text}
                   </span>
-                  <Dropdown trigger={['click']} placement="bottomRight" menu={{ items: ks.menuItemsFor(active) }}>
+                  <Dropdown trigger={['click']} placement="bottomRight" menu={{ items: rowMenuFor(active) }}>
                     <Button type="text" size="small">⋯</Button>
                   </Dropdown>
                 </div>

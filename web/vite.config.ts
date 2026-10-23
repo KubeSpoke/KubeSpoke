@@ -19,6 +19,7 @@ export default defineConfig({
       '/cluster-agent': { target, changeOrigin: true, ws: true },
       '/pod-log': { target, changeOrigin: true, ws: true },
       '/pod-exec': { target, changeOrigin: true, ws: true },
+      '/pod-file': { target, changeOrigin: true, ws: true },
     },
   },
 })

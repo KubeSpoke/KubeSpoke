@@ -23,6 +23,7 @@ import { useResource } from '../hooks/useResource'
 import { useClusterStore } from '../store/useClusterStore'
 import { datetime } from '../utils/format'
 import { toYaml } from '../utils/yaml'
+import CanaryModal from './network/CanaryModal'
 import CreateIngressModal from './network/CreateIngressModal'
 import CreateServiceModal from './network/CreateServiceModal'
 
@@ -256,6 +257,7 @@ export default function ServicesPage() {
   const [activeKey, setActiveKey] = useState<string>()
   const [yamlText, setYamlText] = useState<{ title: string; text: string } | null>(null)
   const [infoRow, setInfoRow] = useState<Row | null>(null)
+  const [canaryRow, setCanaryRow] = useState<Row | null>(null)
   const [detailRow, setDetailRow] = useState<Row | null>(null)
   const [detailPod, setDetailPod] = useState<{ ns: string; name: string } | null>(null)
   const [detailRes, setDetailRes] = useState<{ d: ResourceDescriptor; ns: string; name: string } | null>(null)
@@ -465,6 +467,10 @@ export default function ServicesPage() {
     items: [
       { key: 'info', label: '编辑信息', onClick: () => openInfo(r) },
       { key: 'yaml', label: '编辑 YAML', onClick: () => void openYaml(r) },
+      // 灰度基于 nginx-ingress annotation 实现，只对 Service 有意义
+      ...(r.d.key === 'services'
+        ? [{ key: 'canary', label: '金丝雀发布', onClick: () => setCanaryRow(r) }]
+        : []),
       { key: 'delete', label: '删除', danger: true, onClick: () => confirmDelete(r) },
     ],
   })
@@ -964,6 +970,17 @@ export default function ServicesPage() {
           style={{ fontSize: 12 }}
         />
       </Modal>
+
+      {canaryRow && (
+        <CanaryModal
+          open
+          cluster={cluster}
+          namespace={canaryRow.ns}
+          name={canaryRow.name}
+          onClose={() => setCanaryRow(null)}
+          onChanged={refresh}
+        />
+      )}
 
       {detailRow && (
         <ResourceDetailDrawer

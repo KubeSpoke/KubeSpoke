@@ -1,13 +1,14 @@
-import { App, Alert, Button, Drawer, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Typography } from 'antd'
+import { App, Alert, Button, Drawer, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Tooltip, Typography } from 'antd'
 import type { TablePaginationConfig } from 'antd'
 import { ContainerOutlined, DownOutlined, ReloadOutlined } from '@ant-design/icons'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { NameCell } from '../components/PageShell'
 import { DetailDrawer } from '../components/DetailDrawer'
 import EventsPanel from '../components/EventsPanel'
 import PodLogStream from '../components/PodLogStream'
 import { PodTerminal } from '../components/PodTerminal'
+import { confirmApply } from '../components/ApplyGuard'
 import { clusterApi } from '../api/cluster'
 import { resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
@@ -105,6 +106,12 @@ type DepSpec = {
   template?: { metadata?: Record<string, unknown>; spec?: { containers?: Container[] } & Record<string, unknown> }
 }
 
+type HpaSpec = {
+  scaleTargetRef?: { kind?: string; name?: string }
+  minReplicas?: number
+  maxReplicas?: number
+}
+
 type DepStatus = {
   replicas?: number
   readyReplicas?: number
@@ -123,17 +130,15 @@ function envValueText(e: EnvVar): string {
   return '-'
 }
 
-/** 读改写：把 restartedAt 注解打到 Pod 模板上（等价 rollout restart） */
-async function markRestart(cluster: string, d: ResourceDescriptor, name: string, ns: string): Promise<unknown> {
-  const obj = await resourceApi.read(cluster, d, name, ns)
+/** 读改写补丁：把 restartedAt 注解打到 Pod 模板上（等价 rollout restart），在传入的 live 上返回新对象 */
+function withRestartAnnotation(obj: K8sObject): K8sObject {
   const spec = { ...(obj.spec as Record<string, unknown> | undefined) }
   const template = { ...((spec.template as Record<string, unknown> | undefined) ?? {}) }
   const meta = { ...((template.metadata as Record<string, unknown> | undefined) ?? {}) }
   meta.annotations = { ...((meta.annotations as Record<string, string> | undefined) ?? {}), [RESTART_KEY]: new Date().toISOString() }
   template.metadata = meta
   spec.template = template
-  obj.spec = spec
-  return resourceApi.applyYaml(cluster, toYaml(obj))
+  return { ...obj, spec }
 }
 
 function MetaBlock({ title, data }: { title: string; data?: Record<string, string> }) {
@@ -196,6 +201,13 @@ export function DeploymentDetailBody({
         : Promise.resolve([] as V1Pod[]),
     [cluster, ns],
   )
+  const hpaRes = useResource(
+    () =>
+      cluster
+        ? resourceApi.list(cluster, resourceDescriptors.horizontalpodautoscalers, ns).then((r) => toItems(r))
+        : Promise.resolve([] as K8sObject[]),
+    [cluster, ns],
+  )
 
   const [busy, setBusy] = useState(false)
   const [pageSize, setPageSize] = useState(10)
@@ -209,12 +221,17 @@ export function DeploymentDetailBody({
   const [rollbackOpen, setRollbackOpen] = useState(false)
   const [rollbackSel, setRollbackSel] = useState<string>('')
   const [settings, setSettings] = useState<{ replicas: number; containers: { name: string; image: string }[] } | null>(null)
+  /** 期望副本数的草稿值，null 表示未编辑；换集群/项目/应用时丢弃 */
+  const [repDraft, setRepDraft] = useState<number | null>(null)
+  useEffect(() => setRepDraft(null), [cluster, ns, depName])
 
   const containers = useMemo(() => ((deploy.data?.spec as DepSpec | undefined)?.template?.spec?.containers ?? []), [deploy.data])
   const matchLabels = useMemo(() => ((deploy.data?.spec as DepSpec | undefined)?.selector?.matchLabels ?? {}), [deploy.data])
   const spec = (deploy.data?.spec ?? {}) as DepSpec
   const status = (deploy.data?.status ?? {}) as DepStatus
   const desired = Number(spec.replicas ?? 0)
+  const targetReplicas = repDraft ?? desired
+  const replicasDirty = targetReplicas !== desired
   const ready = Number(status.readyReplicas ?? 0)
   const current = Number(status.replicas ?? 0)
   const labels = deploy.data?.metadata?.labels ?? {}
@@ -236,10 +253,23 @@ export function DeploymentDetailBody({
     return (podsRes.data ?? []).filter((p) => entries.every(([k, v]) => p.metadata?.labels?.[k] === v))
   }, [podsRes.data, matchLabels])
 
+  /** scaleTargetRef 指向本部署的 HPA：存在时副本数由它决定，手调会被打回 */
+  const hpa = useMemo(
+    () =>
+      (hpaRes.data ?? []).find((o) => {
+        const ref = (o.spec as HpaSpec | undefined)?.scaleTargetRef
+        return ref?.kind === 'Deployment' && ref?.name === depName
+      }),
+    [hpaRes.data, depName],
+  )
+  const hpaSpec = (hpa?.spec ?? {}) as HpaSpec
+  const hpaRange = hpaSpec.minReplicas && hpaSpec.maxReplicas ? ` ${hpaSpec.minReplicas}-${hpaSpec.maxReplicas}` : ''
+
   const refreshAll = () => {
     deploy.refresh()
     rsRes.refresh()
     podsRes.refresh()
+    hpaRes.refresh()
   }
 
   if (!cluster) return <Empty description="请先选择在线集群" className="py-24" />
@@ -249,10 +279,26 @@ export function DeploymentDetailBody({
   const submitInfo = async () => {
     setBusy(true)
     try {
-      const obj = await readDeploy()
-      writeAnnotation(obj, ALIAS_KEY, alias.trim())
-      writeAnnotation(obj, DESC_KEY, desc.trim())
-      await resourceApi.applyYaml(cluster, toYaml(obj))
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: DEPLOYMENTS,
+        name: depName,
+        namespace: ns,
+        seeded: deploy.data,
+        title: `保存 ${depName} 的信息？`,
+        okText: '保存',
+        build: (live) => {
+          writeAnnotation(live, ALIAS_KEY, alias.trim())
+          writeAnnotation(live, DESC_KEY, desc.trim())
+          return live
+        },
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
       message.success('已保存')
       setInfoOpen(false)
       refreshAll()
@@ -312,7 +358,23 @@ export function DeploymentDetailBody({
   const recreate = async () => {
     setBusy(true)
     try {
-      await markRestart(cluster, DEPLOYMENTS, depName, ns)
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: DEPLOYMENTS,
+        name: depName,
+        namespace: ns,
+        seeded: deploy.data,
+        title: `重新创建 ${depName}？`,
+        intro: '会给 Pod 模板打一个重启注解，触发滚动更新。',
+        okText: '重建',
+        build: withRestartAnnotation,
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
       message.success('已触发重新创建')
       refreshAll()
       onChanged?.()
@@ -323,17 +385,69 @@ export function DeploymentDetailBody({
     }
   }
 
-  /** 回退：把历史 ReplicaSet 的 spec.template 写回部署（读改写 + applyYaml） */
+  /** 回退：把历史 ReplicaSet 的 spec.template 写回部署（经由 confirmApply 重新读取线上部署后打补丁） */
   const rollbackTo = async (rsName: string) => {
     setBusy(true)
     try {
-      const [obj, rs] = await Promise.all([readDeploy(), resourceApi.read(cluster, REPLICASETS, rsName, ns)])
-      const depSpec = { ...(obj.spec as Record<string, unknown> | undefined) }
-      depSpec.template = (rs.spec as { template?: unknown } | undefined)?.template
-      obj.spec = depSpec
-      await resourceApi.applyYaml(cluster, toYaml(obj))
+      const rs = await resourceApi.read(cluster, REPLICASETS, rsName, ns)
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: DEPLOYMENTS,
+        name: depName,
+        namespace: ns,
+        seeded: deploy.data,
+        title: `回退到 ${rsName}？`,
+        intro: '会把该版本的 Pod 模板写回部署，触发滚动更新。',
+        okText: '回退',
+        build: (live) => {
+          const depSpec = { ...(live.spec as Record<string, unknown> | undefined) }
+          depSpec.template = (rs.spec as { template?: unknown } | undefined)?.template
+          live.spec = depSpec
+          return live
+        },
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
       message.success(`已回退到 ${rsName}`)
       setRollbackOpen(false)
+      refreshAll()
+      onChanged?.()
+    } catch (e) {
+      message.error((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** 就地扩缩容：只改 spec.replicas，经 confirmApply 在线上最新对象上打补丁 */
+  const submitReplicas = async () => {
+    if (!replicasDirty) return
+    setBusy(true)
+    try {
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: DEPLOYMENTS,
+        name: depName,
+        namespace: ns,
+        seeded: deploy.data,
+        okText: '调整',
+        build: (live) => {
+          live.spec = { ...(live.spec as DepSpec | undefined), replicas: targetReplicas }
+          return live
+        },
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
+      message.success(`副本数已调整为 ${targetReplicas}`)
+      setRepDraft(null)
       refreshAll()
       onChanged?.()
     } catch (e) {
@@ -352,19 +466,34 @@ export function DeploymentDetailBody({
 
   const submitSettings = async () => {
     if (!settings) return
+    const snapshot = settings
     setBusy(true)
     try {
-      const obj = await readDeploy()
-      const depSpec = { ...(obj.spec as DepSpec | undefined) }
-      depSpec.replicas = settings.replicas
-      const template = { ...(depSpec.template ?? {}) }
-      const tSpec = { ...(template.spec ?? {}) }
-      const orig = (tSpec.containers ?? []) as Container[]
-      tSpec.containers = settings.containers.map((c, i) => ({ ...(orig[i] ?? {}), name: c.name, image: c.image }))
-      template.spec = tSpec
-      depSpec.template = template
-      obj.spec = depSpec
-      await resourceApi.applyYaml(cluster, toYaml(obj))
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: DEPLOYMENTS,
+        name: depName,
+        namespace: ns,
+        seeded: deploy.data,
+        build: (live) => {
+          const depSpec = { ...(live.spec as DepSpec | undefined) }
+          depSpec.replicas = snapshot.replicas
+          const template = { ...(depSpec.template ?? {}) }
+          const tSpec = { ...(template.spec ?? {}) }
+          const orig = (tSpec.containers ?? []) as Container[]
+          tSpec.containers = snapshot.containers.map((c, i) => ({ ...(orig[i] ?? {}), name: c.name, image: c.image }))
+          template.spec = tSpec
+          depSpec.template = template
+          live.spec = depSpec
+          return live
+        },
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
       message.success('已保存')
       setSettings(null)
       refreshAll()
@@ -379,13 +508,13 @@ export function DeploymentDetailBody({
   const confirmDelete = () => {
     modal.confirm({
       title: `删除 ${depName}？`,
-      content: '删除部署会同时回收其容器组，此操作不可恢复。',
+      content: '删除部署会同时回收其容器组；删除前会先把对象存进回收站，七天内可以还原。',
       okText: '删除',
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await clusterApi.deleteDeployment(cluster, ns, depName)
-          message.success('已删除')
+          const { saved } = await resourceApi.remove(cluster, DEPLOYMENTS, depName, ns)
+          message.success(saved ? '已删除，可在回收站还原' : '已删除')
           onDeleted?.()
         } catch (e) {
           message.error((e as Error).message)
@@ -486,8 +615,43 @@ export function DeploymentDetailBody({
                       <div className="mt-1 text-xs text-[#8f9aa9]">副本</div>
                     </div>
                     <div className="text-sm text-[#5c6b80]">
-                      <div>期望副本数: {desired}</div>
-                      <div>当前副本数: {current}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="whitespace-nowrap">期望副本数:</span>
+                        <InputNumber
+                          size="small"
+                          min={0}
+                          value={targetReplicas}
+                          onChange={(v) => setRepDraft(Number(v ?? 0))}
+                          onPressEnter={() => void submitReplicas()}
+                          className="!w-[72px]"
+                        />
+                        {replicasDirty && (
+                          <>
+                            <Button
+                              size="small"
+                              type="link"
+                              className="!px-1"
+                              loading={busy}
+                              onClick={() => void submitReplicas()}
+                            >
+                              {targetReplicas === 0 ? '停止' : '调整'}
+                            </Button>
+                            <Button size="small" type="text" className="!px-1" disabled={busy} onClick={() => setRepDraft(null)}>
+                              取消
+                            </Button>
+                          </>
+                        )}
+                        {hpa && (
+                          <Tooltip
+                            title={`由弹性伸缩 ${hpa.metadata?.name ?? ''} 托管，副本数会被自动调整，此处手改不会生效`}
+                          >
+                            <Tag color="orange" variant="filled" className="!mr-0">
+                              {`HPA 托管${hpaRange}`}
+                            </Tag>
+                          </Tooltip>
+                        )}
+                      </div>
+                      <div className="mt-1">当前副本数: {current}</div>
                     </div>
                   </div>
 
@@ -668,12 +832,7 @@ export function DeploymentDetailBody({
                                   {
                                     key: 'rollback',
                                     label: '回退到此版本',
-                                    onClick: () =>
-                                      modal.confirm({
-                                        title: `回退到 ${rsName}？`,
-                                        content: '会把该版本的 Pod 模板写回部署，触发滚动更新。',
-                                        onOk: () => rollbackTo(rsName),
-                                      }),
+                                    onClick: () => void rollbackTo(rsName),
                                   },
                                   {
                                     key: 'delete',

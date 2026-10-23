@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Concurrent;
+using System.Security.Claims;
 using KubeSpoke.Server.Data;
 using KubeSpoke.Server.Extensions;
 using KubeSpoke.Server.Filters;
@@ -67,10 +68,23 @@ namespace KubeSpoke.Server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
+
+            // 连着错到阈值就先进锁，不查库也不验口令：爆破每一轮的成本降到一次字典查找
+            if (LoginFailureTracker.TryGetLockout(request.Username, ip, out var minutesLeft))
+            {
+                Response.Headers["Retry-After"] = (minutesLeft * 60).ToString();
+                return Unauthorized(new { message = $"失败次数过多，请 {minutesLeft} 分钟后再试" });
+            }
+
             var user = await users.ValidateAsync(request.Username, request.Password);
             if (user is null)
+            {
+                LoginFailureTracker.RegisterFailure(request.Username, ip);
                 return Unauthorized(new { message = "用户名或密码错误" });
+            }
 
+            LoginFailureTracker.Reset(user.Username, ip);
             await SignInAsync(user.Username, user.Role);
 
             return Ok(new { username = user.Username, role = user.Role, mustChangePassword = user.MustChangePassword });
@@ -138,6 +152,80 @@ namespace KubeSpoke.Server.Controllers
             if (!await users.RemoveAsync(username))
                 return BadRequest(new { message = "账号不存在或管理员不可删除" });
             return Ok(new { });
+        }
+    }
+
+    /// <summary>
+    /// 登录爆破的挡板：同一个「来源 IP + 账号」连续错到 <see cref="LoginFailureTracker.MaxFailures"/> 次，
+    /// 就锁 <see cref="LoginFailureTracker.LockMinutes"/> 分钟，登录成功立刻清零。
+    /// 键里带上 IP 是有意为之——不然任何人只要知道账号名就能把管理员整个锁在门外。
+    /// 计数只活在当前进程里：重启即清零，多副本部署时各实例各算各的，本产品按单实例设计所以够用，
+    /// 真要多副本再换成共享存储。
+    /// </summary>
+    internal static class LoginFailureTracker
+    {
+        /// <summary>连着错几次开始锁。</summary>
+        internal const int MaxFailures = 5;
+
+        /// <summary>锁多久（分钟）。</summary>
+        internal const int LockMinutes = 15;
+
+        /// <summary>一条计数：已错次数、锁定到期时刻、最后一次活动时刻（给清理用）。</summary>
+        private record Entry(int Failures, DateTime BlockedUntilUtc, DateTime TouchedUtc);
+
+        private static readonly ConcurrentDictionary<string, Entry> Attempts = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>字典条数上限：超了先顺手清掉过窗的键，防止拿随机账号名把内存撑爆。</summary>
+        private const int AttemptsCap = 4096;
+
+        private static string Key(string? username, string ip) => $"{ip}|{(username ?? "").Trim()}";
+
+        /// <summary>现在是否处于锁定期，是就回剩余分钟数（向上取整，至少 1）。</summary>
+        internal static bool TryGetLockout(string? username, string ip, out int minutesLeft)
+        {
+            minutesLeft = 0;
+            var now = DateTime.UtcNow;
+            if (!Attempts.TryGetValue(Key(username, ip), out var entry) || entry.Failures < MaxFailures) return false;
+
+            // 锁定期过了就把账清掉，下一次错误重新开始计数
+            if (entry.BlockedUntilUtc <= now)
+            {
+                Attempts.TryRemove(Key(username, ip), out _);
+                return false;
+            }
+
+            minutesLeft = Math.Max(1, (int)Math.Ceiling((entry.BlockedUntilUtc - now).TotalMinutes));
+            return true;
+        }
+
+        /// <summary>记一次失败；够阈值就把到期时刻定到现在 + LockMinutes。锁定期内的尝试进不到这里（控制器先挡）。</summary>
+        internal static void RegisterFailure(string? username, string ip)
+        {
+            var now = DateTime.UtcNow;
+            SweepExpired(now);
+
+            var key = Key(username, ip);
+            Attempts.AddOrUpdate(key,
+                _ => new Entry(1, default, now),
+                (_, old) =>
+                {
+                    var expired = old.Failures >= MaxFailures && old.BlockedUntilUtc <= now;
+                    var failures = expired ? 1 : old.Failures + 1;
+                    return new Entry(failures, failures >= MaxFailures ? now.AddMinutes(LockMinutes) : default, now);
+                });
+        }
+
+        /// <summary>登录成功，这条线（同 IP 同账号）的账全清。</summary>
+        internal static void Reset(string? username, string ip) => Attempts.TryRemove(Key(username, ip), out _);
+
+        private static void SweepExpired(DateTime now)
+        {
+            if (Attempts.Count < AttemptsCap) return;
+
+            var cutoff = now.AddMinutes(-LockMinutes);
+            var expired = Attempts.Where(x => x.Value.TouchedUtc <= cutoff).Select(x => x.Key).ToList();
+            foreach (var key in expired)
+                Attempts.TryRemove(key, out _);
         }
     }
 }

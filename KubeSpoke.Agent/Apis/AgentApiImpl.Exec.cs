@@ -107,8 +107,8 @@ namespace KubeSpoke.Agent.Apis
         static Task<WebSocket> Connect(ExecKubernetes exec, StartPodExecRequest request, string command,
             string protocol, CancellationToken cancellationToken)
         {
-            return exec.ConnectExecAsync(request.Namespace, request.Name, request.Container, command, protocol,
-                request.Cols, request.Rows, cancellationToken);
+            return exec.ConnectExecAsync(request.Namespace, request.Name, request.Container, new[] { command },
+                tty: true, protocol, request.Cols, request.Rows, cancellationToken);
         }
     }
 }

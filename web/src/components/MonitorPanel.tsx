@@ -11,19 +11,29 @@ interface Sample {
 const CAP = 40
 const INTERVAL = 15000
 
-/** 资源监控：每 15s 采样 metrics-server 的 CPU/内存，累积成迷你实时折线（打开页面起的采样） */
-export function MonitorPanel({ cluster, kind, name, capacity }: { cluster: string; kind: 'node' | 'pod'; name: string; capacity?: { cpu: number; mem: number } }) {
+/** 资源监控：每 15s 采样 metrics-server 的 CPU/内存，累积成迷你实时折线（打开页面起的采样）。kind='cluster' 时加总所有节点用量，name 可省略 */
+export function MonitorPanel({ cluster, kind, name, capacity }: { cluster: string; kind: 'node' | 'pod' | 'cluster'; name?: string; capacity?: { cpu: number; mem: number } }) {
   const [samples, setSamples] = useState<Sample[]>([])
   const seq = useRef(0)
 
   const poll = useCallback(async () => {
-    if (!cluster || !name) return
+    if (!cluster || (kind !== 'cluster' && !name)) return
     const id = ++seq.current
     try {
-      const list = kind === 'node' ? await clusterApi.nodeMetrics(cluster) : await clusterApi.podMetrics(cluster)
-      const m = (list ?? []).find((x) => x.metadata?.name === name)
-      const usage = m?.usage ?? {}
-      const sample: Sample = { t: Date.now(), cpu: cpuCores(usage.cpu), mem: bytes(usage.memory) }
+      const list = kind === 'pod' ? await clusterApi.podMetrics(cluster) : await clusterApi.nodeMetrics(cluster)
+      let cpu = 0
+      let mem = 0
+      if (kind === 'cluster') {
+        for (const m of list ?? []) {
+          cpu += cpuCores(m.usage?.cpu)
+          mem += bytes(m.usage?.memory)
+        }
+      } else {
+        const m = (list ?? []).find((x) => x.metadata?.name === name)
+        cpu = cpuCores(m?.usage?.cpu)
+        mem = bytes(m?.usage?.memory)
+      }
+      const sample: Sample = { t: Date.now(), cpu, mem }
       // 仅接受最新一次请求结果，避免竞态
       if (id === seq.current) setSamples((prev) => (prev.length >= CAP ? [...prev.slice(1), sample] : [...prev, sample]))
     } catch {
@@ -45,7 +55,7 @@ export function MonitorPanel({ cluster, kind, name, capacity }: { cluster: strin
     <div className="grid gap-4 md:grid-cols-2">
       <Gauge
         title="CPU 使用量"
-        unit="核"
+        unit=""
         cur={`${(latest?.cpu ?? 0).toFixed(3)} 核`}
         cap={capacity ? `总量 ${capacity.cpu.toFixed(1)} 核` : undefined}
         values={samples.map((s) => s.cpu)}

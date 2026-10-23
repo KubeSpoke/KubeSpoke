@@ -18,6 +18,12 @@ builder.Services.AddSignalR(options =>
 {
     hubOptions.MaximumReceiveMessageSize = null;
 })
+// 上传一片 256KB，base64 之后 342KB，SignalR 默认 32KB 的收帧上限会当场把这一帧判死
+.AddHubOptions<FileHub>(hubOptions =>
+{
+    hubOptions.MaximumReceiveMessageSize = 4 * 1024 * 1024;
+})
+
 .AddHubOptions<LogHub>(hubOptions =>
 {
     hubOptions.MaximumReceiveMessageSize = null;
@@ -154,4 +160,10 @@ app.MapHub<ExecHub>("/pod-exec", options =>
     options.TransportMaxBufferSize = 0;
 });
 
+// 容器文件上传通道：浏览器把文件切一片一帧推过来，收尾等到容器里 cat 退出才算写完
+app.MapHub<FileHub>("/pod-file", options =>
+{
+    options.ApplicationMaxBufferSize = 0;
+    options.TransportMaxBufferSize = 0;
+});
 app.Run();

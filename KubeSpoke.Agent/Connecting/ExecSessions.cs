@@ -27,8 +27,24 @@ namespace KubeSpoke.Agent.Connecting
             /// </summary>
             public readonly Channel<Func<Task>> Outbox = Channel.CreateUnbounded<Func<Task>>(new UnboundedChannelOptions { SingleReader = true });
 
-            /// <summary>握手谈成 v5 才有 resize 通道；v4 集群上这路终端只能保持打开那一刻的尺寸。</summary>
-            public bool CanResize;
+            /// <summary>
+            /// 握手是否谈成 v5。谈成才既有多余的 resize 通道，也有半关信号 [0xFF, 通道号]：
+            /// v4 的收帧循环只认「通道号 + 载荷」，见都没见过这个信号，收到只会当非法通道丢掉。
+            /// 上传靠它给容器里的 cat 一个 EOF，所以只肯用 v5 开；终端谈不成 v5 也能用，只是尺寸固定在打开那一刻。
+            /// </summary>
+            public bool V5;
+
+            /// <summary>v5 的半关信号：整帧就两字节，第一个是 0xFF（不是通道号），第二个才是要关的通道。</summary>
+            public const byte StreamClose = 0xFF;
+
+            /// <summary>
+            /// exec 握手完成的信号。握手要几百毫秒，这期间到达的按键/上传分片不能算落空——
+            /// 上传的第一片尤其不能丢，丢了整个文件就少一截，所以让它们全部在队列里等这一下。
+            /// </summary>
+            public readonly TaskCompletionSource Attached = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            /// <summary>等到的最长时限：超过就是这路会话起不来了，交给泵去收掉。</summary>
+            public const int AttachWaitSec = 15;
         }
 
         static readonly ConcurrentDictionary<Guid, Entry> sessions = new();
@@ -51,10 +67,13 @@ namespace KubeSpoke.Agent.Connecting
                         {
                             await frame();
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
-                            // 写不进容器就是这路终端到头了（shell 已退出、连接被集群收走），
-                            // 留着只会让浏览器对着一个不再回话的面板打字
+                            // 写不进容器就是这路会话到头了（shell 已退出、连接被集群收走），
+                            // 留着只会让浏览器对着一个不再回话的面板打字。
+                            // 原因必须写成帧交回去：上传那边看到通道空着结束会当成"容器已经写完"，
+                            // 半途断线就是这么被说成成功的。
+                            entry.Output.TryWrite($"容器输入通道已断开：{ex.Message}");
                             Remove(id);
                             return;
                         }
@@ -66,7 +85,7 @@ namespace KubeSpoke.Agent.Connecting
         }
 
         /// <summary>握手成功后补上 exec 通道。会话此时已被关掉的话，立刻把刚开的连接收掉。</summary>
-        public static bool Attach(Guid id, IStreamDemuxer muxer, WebSocket socket, bool canResize)
+        public static bool Attach(Guid id, IStreamDemuxer muxer, WebSocket socket, bool v5)
         {
             if (!sessions.TryGetValue(id, out var entry))
             {
@@ -76,14 +95,15 @@ namespace KubeSpoke.Agent.Connecting
 
             entry.Muxer = muxer;
             entry.Socket = socket;
-            entry.CanResize = canResize;
+            entry.V5 = v5;
+            entry.Attached.TrySetResult();
             return true;
         }
 
         /// <summary>把键盘输入排进这路会话的下行队列。会话不存在或 base64 不合法回 false，由服务端结束终端。</summary>
         public static bool Write(Guid id, string base64)
         {
-            if (!TryGet(id, out var entry))
+            if (!sessions.TryGetValue(id, out var entry))
             {
                 return false;
             }
@@ -102,12 +122,28 @@ namespace KubeSpoke.Agent.Connecting
         }
 
         /// <summary>
+        /// 给容器侧的 stdin 一个 EOF：发 v5 的半关信号，只收掉 stdin 这一路，
+        /// stdout/stderr/error 三根通道照旧——容器里的 cat 就是靠这个 EOF 才退出，
+        /// 而它退出的成败要从 error 通道读回来，所以绝不能图省事直接关整条连接。
+        /// 会话不存在、或这路压根不是 v5（半关信号发出去也没人认）时回 false。
+        /// </summary>
+        public static bool CloseStdIn(Guid id)
+        {
+            if (!sessions.TryGetValue(id, out var entry) || !entry.V5)
+            {
+                return false;
+            }
+
+            return entry.Outbox.Writer.TryWrite(() => SendRaw(entry, new byte[] { Entry.StreamClose, (byte)ChannelIndex.StdIn }));
+        }
+
+        /// <summary>
         /// 改 PTY 尺寸：v5 把尺寸当 JSON 塞进 resize 通道。
         /// 服务端新老两套字段名都认（Width/Height 是老版的，Cols/Rows 是 kubectl 现在发的），一起写过去最省事。
         /// </summary>
         public static bool Resize(Guid id, int cols, int rows)
         {
-            if (!TryGet(id, out var entry) || !entry.CanResize)
+            if (!TryGet(id, out var entry) || !entry.V5)
             {
                 return false;
             }
@@ -125,7 +161,19 @@ namespace KubeSpoke.Agent.Connecting
             var buffer = new byte[payload.Length + 1];
             buffer[0] = channel;
             Buffer.BlockCopy(payload, 0, buffer, 1, payload.Length);
-            await entry.Socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Binary, true, entry.Cts.Token)
+            await SendRaw(entry, buffer);
+        }
+
+        /// <summary>
+        /// 排进队列的帧可能到得比握手还早，所以这里先等它谈成。
+        /// 上传的第一片尤其不能丢——丢了整个文件就少一截。
+        /// </summary>
+        static async Task SendRaw(Entry entry, byte[] frame)
+        {
+            await entry.Attached.Task.WaitAsync(TimeSpan.FromSeconds(Entry.AttachWaitSec), entry.Cts.Token)
+                .ConfigureAwait(false);
+
+            await entry.Socket.SendAsync(new ArraySegment<byte>(frame), WebSocketMessageType.Binary, true, entry.Cts.Token)
                 .ConfigureAwait(false);
         }
 
@@ -150,6 +198,8 @@ namespace KubeSpoke.Agent.Connecting
             }
 
             entry.Outbox.Writer.TryComplete();
+            // 握手还没谈成就被关掉：让排在队列里等 Attach 的帧立刻散掉，别吊着一个永远不回来的泵
+            entry.Attached.TrySetCanceled();
             entry.Cts.Cancel();
             try { entry.Muxer?.Dispose(); } catch { }
             entry.Cts.Dispose();

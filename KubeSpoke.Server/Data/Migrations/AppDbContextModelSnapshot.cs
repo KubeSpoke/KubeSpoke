@@ -203,6 +203,66 @@ namespace KubeSpoke.Server.Migrations
                     b.ToTable("Audits");
                 });
 
+            modelBuilder.Entity("KubeSpoke.Server.Data.DeletedObjectEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cluster")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Group")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Namespace")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Plural")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RestoredUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TimeUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Yaml")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresUtc");
+
+                    b.HasIndex("TimeUtc");
+
+                    b.ToTable("DeletedObjects");
+                });
+
             modelBuilder.Entity("KubeSpoke.Server.Data.SettingEntity", b =>
                 {
                     b.Property<string>("Key")

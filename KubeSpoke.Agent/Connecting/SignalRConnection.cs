@@ -114,6 +114,7 @@ namespace KubeSpoke.Agent.Connecting
             // 在 handler 里 await 发送的话按键会在 WebSocket 上互相穿插，终端里就是一行乱码
             connection.On<Guid, string>(ConstString.AGENT_EXEC_INPUT, ExecInput);
             connection.On<Guid>(ConstString.AGENT_EXEC_CLOSE, ExecClose);
+            connection.On<Guid>(ConstString.AGENT_EXEC_CLOSE_STDIN, ExecCloseStdIn);
             connection.On<Guid, int, int>(ConstString.AGENT_EXEC_RESIZE, ExecResize);
 
             // 日志面板关掉后服务端会按会话 id 点名收流。不发这一句，agent 的读循环就只能自己猜什么时候该停。
@@ -152,6 +153,19 @@ namespace KubeSpoke.Agent.Connecting
         {
             logger.LogInformation($"[exec 关闭] {sessionId}");
             ExecSessions.Remove(sessionId);
+        }
+
+        /// <summary>
+        /// 上传写完最后一个字节：只给容器侧的 stdin 一个 EOF，会话留着。
+        /// 容器里的 cat 就是靠这个 EOF 才会退出、把临时文件改名成目标文件；
+        /// 会话要活着等服务端读到 cat 结束，才知道这次上传到底成没成。
+        /// </summary>
+        private void ExecCloseStdIn(Guid sessionId)
+        {
+            if (!ExecSessions.CloseStdIn(sessionId))
+            {
+                logger.LogWarning($"[exec 关 stdin 落空] 会话 {sessionId} 已不存在");
+            }
         }
 
         /// <summary>关掉一路日志推流。会话早就自己收掉了也不亏，Remove 是幂等的。</summary>
@@ -232,7 +246,15 @@ namespace KubeSpoke.Agent.Connecting
                 }
                 else
                 {
-                    throw tex.InnerException ?? tex;
+                    // catch 里重新抛的异常不会被同一个 try 的兄弟 catch 接住，
+                    // "文件必须是绝对路径" 这类业务错因就是这么从 agent 侧逃出去、让服务端白等满一个超时的
+                    var inner = tex.InnerException ?? tex;
+                    logger.LogError(inner, "[RPC 执行失败]");
+                    await connection!.SendAsync("RpcCallBack", new RPCResponse()
+                    {
+                        RequestId = message.RequestId,
+                        Exception = Describe(inner),
+                    });
                 }
             }
             catch (Exception ex)
@@ -241,10 +263,16 @@ namespace KubeSpoke.Agent.Connecting
                 await connection!.SendAsync("RpcCallBack", new RPCResponse()
                 {
                     RequestId = message.RequestId,
-                    Exception = ex.Message,
+                    Exception = Describe(ex),
                 });
             }
         }
+
+        /// <summary>同步等异步会把真实错因裹进 AggregateException，照原样取 Message 就只剩一句 "One or more errors occurred."</summary>
+        static string Describe(Exception ex) =>
+            ex is AggregateException agg && agg.Flatten().InnerExceptions.Count == 1
+                ? Describe(agg.Flatten().InnerExceptions[0])
+                : ex.Message;
 
         /// <summary>
         /// 唯一的重建入口，同一时刻只允许一个循环在跑。

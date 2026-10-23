@@ -6,6 +6,7 @@ import { resourceApi } from '../api/resources'
 import type { K8sObject } from '../api/resources'
 import type { ResourceDescriptor } from '../config/nav'
 import { toYaml } from '../utils/yaml'
+import { confirmApply } from './ApplyGuard'
 
 /** 行操作弹窗逻辑：ResourceListPage 与后续专属列表页共用 */
 export interface KsActionCtx {
@@ -79,7 +80,7 @@ const ACTIONS_BY_KEY: Record<string, string[]> = {
   workloadtemplates: ['editInfo', 'delete'],
 }
 
-/** 需要弹窗编辑的动作；其余（recreate/rerun/pause/resume/template/delete）点击即执行或确认 */
+/** 需要弹窗编辑的动作；recreate/rerun/pause/resume 点击后经 confirmApply 差异确认再执行，template 仅提示，delete 自带确认 */
 const MODAL_ACTIONS = new Set([
   'editInfo',
   'viewYaml',
@@ -106,8 +107,8 @@ const b64dec = (v: string): string => {
 interface BodyProps {
   obj: K8sObject
   onCancel: () => void
-  /** 传入基于 obj 修改后的完整对象，由外层负责 applyYaml */
-  onSave: (patched: K8sObject) => Promise<void>
+  /** 传入补丁函数：外层会重新读取线上最新对象并传入，在其基础上修改并返回待提交的完整对象 */
+  onSave: (patch: (base: K8sObject) => K8sObject) => Promise<void>
 }
 
 function EditInfoBody({ obj, onCancel, onSave }: BodyProps) {
@@ -117,19 +118,21 @@ function EditInfoBody({ obj, onCancel, onSave }: BodyProps) {
   const [busy, setBusy] = useState(false)
 
   const save = async () => {
-    const next = stripStatus(obj)
-    const metadata: Rec = { ...asRec(next.metadata) }
-    const annotations: Record<string, string> = { ...strMap(metadata.annotations) }
-    if (alias.trim()) annotations[ALIAS_KEY] = alias.trim()
-    else delete annotations[ALIAS_KEY]
-    if (desc.trim()) annotations[DESC_KEY] = desc.trim()
-    else delete annotations[DESC_KEY]
-    if (Object.keys(annotations).length) metadata.annotations = annotations
-    else delete metadata.annotations
-    next.metadata = metadata as K8sObject['metadata']
     setBusy(true)
     try {
-      await onSave(next)
+      await onSave((base) => {
+        const next = stripStatus(base)
+        const metadata: Rec = { ...asRec(next.metadata) }
+        const annotations: Record<string, string> = { ...strMap(metadata.annotations) }
+        if (alias.trim()) annotations[ALIAS_KEY] = alias.trim()
+        else delete annotations[ALIAS_KEY]
+        if (desc.trim()) annotations[DESC_KEY] = desc.trim()
+        else delete annotations[DESC_KEY]
+        if (Object.keys(annotations).length) metadata.annotations = annotations
+        else delete metadata.annotations
+        next.metadata = metadata as K8sObject['metadata']
+        return next
+      })
     } finally {
       setBusy(false)
     }
@@ -192,22 +195,24 @@ function EditServiceBody({ obj, onCancel, onSave }: BodyProps) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v as never } : r)))
 
   const save = async () => {
-    const next = stripStatus(obj)
-    const ports = rows
-      .filter((r) => r.port != null)
-      .map((r) => {
-        const item: Rec = { protocol: r.protocol || 'TCP', port: r.port }
-        if (r.name.trim()) item.name = r.name.trim()
-        const tp = r.targetPort.trim()
-        if (tp) item.targetPort = /^\d+$/.test(tp) ? Number(tp) : tp
-        const origin = asArr(specOf(obj).ports)[rows.indexOf(r)]
-        if (origin?.nodePort !== undefined) item.nodePort = origin.nodePort
-        return item
-      })
-    next.spec = { ...specOf(next), ports }
     setBusy(true)
     try {
-      await onSave(next)
+      await onSave((base) => {
+        const next = stripStatus(base)
+        const ports = rows
+          .filter((r) => r.port != null)
+          .map((r) => {
+            const item: Rec = { protocol: r.protocol || 'TCP', port: r.port }
+            if (r.name.trim()) item.name = r.name.trim()
+            const tp = r.targetPort.trim()
+            if (tp) item.targetPort = /^\d+$/.test(tp) ? Number(tp) : tp
+            const origin = asArr(specOf(base).ports)[rows.indexOf(r)]
+            if (origin?.nodePort !== undefined) item.nodePort = origin.nodePort
+            return item
+          })
+        next.spec = { ...specOf(next), ports }
+        return next
+      })
     } finally {
       setBusy(false)
     }
@@ -271,11 +276,13 @@ function EditExternalBody({ obj, onCancel, onSave }: BodyProps) {
   const ports = asArr(specOf(obj).ports)
 
   const save = async () => {
-    const next = stripStatus(obj)
-    next.spec = { ...specOf(next), type }
     setBusy(true)
     try {
-      await onSave(next)
+      await onSave((base) => {
+        const next = stripStatus(base)
+        next.spec = { ...specOf(next), type }
+        return next
+      })
     } finally {
       setBusy(false)
     }
@@ -377,15 +384,17 @@ function EditRulesBody({ obj, onCancel, onSave }: BodyProps) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)))
 
   const save = async () => {
-    const next = stripStatus(obj)
-    const spec: Rec = { ...specOf(next) }
-    const rules = rowsToRules(rows)
-    if (rules.length) spec.rules = rules
-    else delete spec.rules
-    next.spec = spec
     setBusy(true)
     try {
-      await onSave(next)
+      await onSave((base) => {
+        const next = stripStatus(base)
+        const spec: Rec = { ...specOf(next) }
+        const rules = rowsToRules(rows)
+        if (rules.length) spec.rules = rules
+        else delete spec.rules
+        next.spec = spec
+        return next
+      })
     } finally {
       setBusy(false)
     }
@@ -464,32 +473,34 @@ function KvBody({
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: v } : r)))
 
   const save = async () => {
-    const next = stripStatus(obj)
-    const map: Record<string, string> = {}
-    for (const r of rows) {
-      if (r.key.trim()) map[r.key.trim()] = r.value
-    }
-    if (mode === 'annotations') {
-      const metadata: Rec = { ...asRec(next.metadata) }
-      if (Object.keys(map).length) metadata.annotations = map
-      else delete metadata.annotations
-      next.metadata = metadata as K8sObject['metadata']
-    } else {
-      const payload: Rec = next as unknown as Rec
-      delete payload.data
-      delete payload.binaryData
-      if (asRec(obj).kind === 'Secret') {
-        // secret 走 stringData（applyYaml 后端可建），保留原 type
-        if (asStr(obj.type)) payload.type = asStr(obj.type)
-        payload.stringData = map
-      } else {
-        payload.data = map
-      }
-      // secret/configmap 顶层字段可能被 stripStatus 的浅拷贝丢掉？JSON 深拷贝保留全字段，无需处理
-    }
     setBusy(true)
     try {
-      await onSave(next)
+      await onSave((base) => {
+        const next = stripStatus(base)
+        const map: Record<string, string> = {}
+        for (const r of rows) {
+          if (r.key.trim()) map[r.key.trim()] = r.value
+        }
+        if (mode === 'annotations') {
+          const metadata: Rec = { ...asRec(next.metadata) }
+          if (Object.keys(map).length) metadata.annotations = map
+          else delete metadata.annotations
+          next.metadata = metadata as K8sObject['metadata']
+        } else {
+          const payload: Rec = next as unknown as Rec
+          delete payload.data
+          delete payload.binaryData
+          if (asRec(base).kind === 'Secret') {
+            // secret 走 stringData（applyYaml 后端可建），保留原 type
+            if (asStr(base.type)) payload.type = asStr(base.type)
+            payload.stringData = map
+          } else {
+            payload.data = map
+          }
+          // secret/configmap 顶层字段可能被 stripStatus 的浅拷贝丢掉？JSON 深拷贝保留全字段，无需处理
+        }
+        return next
+      })
     } finally {
       setBusy(false)
     }
@@ -550,10 +561,46 @@ export function useKsActions(ctx: KsActionCtx): {
     return acts
   }
 
-  /** 统一读-改-写保存：patched 已由弹窗体完成字段修改 */
-  const savePatched = async (patched: K8sObject) => {
+  /**
+   * 经 confirmApply 守卫提交：重读线上对象 → 在其上打补丁 → 差异确认 → applyYaml。
+   * confirmApply 返回 null 且确认框从未弹出时，语义是「没有变化」（而非用户放弃），给一句提示。
+   */
+  const guardApply = async (
+    seeded: K8sObject,
+    patch: (live: K8sObject) => K8sObject,
+    title?: string,
+    okText?: string,
+  ): Promise<boolean> => {
+    let confirmShown = false
+    const yaml = await confirmApply({
+      modal: {
+        confirm: (opts) => {
+          confirmShown = true
+          return modal.confirm(opts)
+        },
+      },
+      cluster,
+      descriptor: d,
+      name: nameOf(seeded),
+      namespace: nsOf(seeded),
+      seeded,
+      build: patch,
+      title,
+      okText,
+    })
+    if (yaml === null) {
+      if (!confirmShown) message.warning('没有变化')
+      return false
+    }
+    await resourceApi.applyYaml(cluster, yaml)
+    return true
+  }
+
+  /** 统一读-改-写保存：弹窗体提供补丁函数，施加到线上最新对象后确认提交 */
+  const savePatched = async (patch: (base: K8sObject) => K8sObject) => {
+    if (!loaded) return
     try {
-      await resourceApi.applyYaml(cluster, toYaml(patched))
+      if (!(await guardApply(loaded, patch))) return
       message.success('已保存')
       setPending(null)
       setLoaded(null)
@@ -574,64 +621,71 @@ export function useKsActions(ctx: KsActionCtx): {
       if (action === 'delete') {
         modal.confirm({
           title: `确定删除 ${nm} 吗？`,
-          content: '删除后不可恢复。',
+          content: '删除前会先把对象存进回收站，七天内可以还原；Pod、副本集、项目、节点、保密字典不留快照。',
           okText: '删除',
           okButtonProps: { danger: true },
           onOk: async () => {
-            await resourceApi.remove(cluster, d, nm, ns)
-            message.success('已删除')
+            const { saved } = await resourceApi.remove(cluster, d, nm, ns)
+            message.success(saved ? '已删除，可在回收站还原' : '已删除')
             refresh()
           },
         })
         return
       }
-      const obj = await resourceApi.read(cluster, d, nm, ns)
+      let applied = false
       if (action === 'recreate') {
-        const next = stripStatus(obj)
-        const spec: Rec = { ...specOf(next) }
-        const template: Rec = { ...asRec(spec.template) }
-        template.metadata = { ...asRec(template.metadata), annotations: { ...strMap(asRec(template.metadata).annotations), 'kubespoke.io/restartedAt': new Date().toISOString() } }
-        spec.template = template
-        next.spec = spec
-        await resourceApi.applyYaml(cluster, toYaml(next))
-        message.success('已重新创建')
+        applied = await guardApply(o, (live) => {
+          const next = stripStatus(live)
+          const spec: Rec = { ...specOf(next) }
+          const template: Rec = { ...asRec(spec.template) }
+          template.metadata = { ...asRec(template.metadata), annotations: { ...strMap(asRec(template.metadata).annotations), 'kubespoke.io/restartedAt': new Date().toISOString() } }
+          spec.template = template
+          next.spec = spec
+          return next
+        }, `确认重新创建 ${nm}？`, '重建')
+        if (applied) message.success('已重新创建')
       } else if (action === 'pause' || action === 'resume') {
-        const next = stripStatus(obj)
-        next.spec = { ...specOf(next), suspend: action === 'pause' }
-        await resourceApi.applyYaml(cluster, toYaml(next))
-        message.success(action === 'pause' ? '已暂停' : '已继续')
+        applied = await guardApply(o, (live) => {
+          const next = stripStatus(live)
+          next.spec = { ...specOf(next), suspend: action === 'pause' }
+          return next
+        }, action === 'pause' ? `确认暂停 ${nm}？` : `确认继续 ${nm}？`, action === 'pause' ? '暂停' : '继续')
+        if (applied) message.success(action === 'pause' ? '已暂停' : '已继续')
       } else if (action === 'rerun') {
-        const next: K8sObject = JSON.parse(JSON.stringify(obj)) as K8sObject
-        delete next.status
-        const metadata: Rec = { ...asRec(next.metadata) }
-        delete metadata.uid
-        delete metadata.resourceVersion
-        delete metadata.creationTimestamp
-        delete metadata.ownerReferences
-        delete metadata.managedFields
-        metadata.name = `${nm}-rerun-${rand5()}`
-        const labels = strMap(metadata.labels)
-        delete labels['controller-uid']
-        delete labels['job-name']
-        if (Object.keys(labels).length) metadata.labels = labels
-        else delete metadata.labels
-        next.metadata = metadata as K8sObject['metadata']
-        const spec: Rec = { ...specOf(next) }
-        delete spec.selector
-        const tmpl: Rec = { ...asRec(spec.template) }
-        const tmplMeta: Rec = { ...asRec(tmpl.metadata) }
-        const tmplLabels = strMap(tmplMeta.labels)
-        delete tmplLabels['controller-uid']
-        delete tmplLabels['job-name']
-        if (Object.keys(tmplLabels).length) tmplMeta.labels = tmplLabels
-        else delete tmplMeta.labels
-        tmpl.metadata = tmplMeta
-        spec.template = tmpl
-        next.spec = spec
-        await resourceApi.applyYaml(cluster, toYaml(next))
-        message.success(`已重新运行：${asStr(metadata.name)}`)
+        const newName = `${nm}-rerun-${rand5()}`
+        applied = await guardApply(o, (live) => {
+          const next: K8sObject = JSON.parse(JSON.stringify(live)) as K8sObject
+          delete next.status
+          const metadata: Rec = { ...asRec(next.metadata) }
+          delete metadata.uid
+          delete metadata.resourceVersion
+          delete metadata.creationTimestamp
+          delete metadata.ownerReferences
+          delete metadata.managedFields
+          metadata.name = newName
+          const labels = strMap(metadata.labels)
+          delete labels['controller-uid']
+          delete labels['job-name']
+          if (Object.keys(labels).length) metadata.labels = labels
+          else delete metadata.labels
+          next.metadata = metadata as K8sObject['metadata']
+          const spec: Rec = { ...specOf(next) }
+          delete spec.selector
+          const tmpl: Rec = { ...asRec(spec.template) }
+          const tmplMeta: Rec = { ...asRec(tmpl.metadata) }
+          const tmplLabels = strMap(tmplMeta.labels)
+          delete tmplLabels['controller-uid']
+          delete tmplLabels['job-name']
+          if (Object.keys(tmplLabels).length) tmplMeta.labels = tmplLabels
+          else delete tmplMeta.labels
+          tmpl.metadata = tmplMeta
+          spec.template = tmpl
+          next.spec = spec
+          return next
+        }, `确认重新运行 ${nm}？`, '运行')
+        if (applied) message.success(`已重新运行：${newName}`)
       }
-      refresh()
+      if (applied) refresh()
     } catch (e) {
       message.error((e as Error).message)
     }
@@ -723,7 +777,8 @@ export function useKsActions(ctx: KsActionCtx): {
   return { menuItemsFor, modalNode, open }
 }
 
-/** 编辑 YAML：直接对文本负责，提交走 applyYaml（不经对象回传，避免格式损失） */
+/** 编辑 YAML：直接对文本负责，提交走 applyYaml（不经对象回传，避免格式损失）。
+ * 手输的原始 YAML 无法表达为 build(live) => next，有意保留直连路径，不走 confirmApply。 */
 function YamlEditWrapper({
   cluster,
   loaded,

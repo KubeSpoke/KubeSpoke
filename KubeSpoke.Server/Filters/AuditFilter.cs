@@ -2,12 +2,14 @@ using System.Text.Json;
 using KubeSpoke.Server.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace KubeSpoke.Server.Filters
 {
     /// <summary>
     /// 控制台的写操作留痕：非 GET 请求执行完就落一条库，读接口不进。
     /// 参数只按白名单挑几个字段拼摘要，口令一类不可能被写进库里。
+    /// Auth 里的失败（登录被拒之类）不抛异常而是直接回 401/403，按状态码补成失败记录。
     /// </summary>
     public class AuditFilter(AuditRepository audits, ILogger<AuditFilter> logger) : IAsyncActionFilter
     {
@@ -36,9 +38,6 @@ namespace KubeSpoke.Server.Filters
 
             try
             {
-                var (success, message) = executed.Exception is { } ex
-                    ? (false, BXExceptionFilter.Unwrap(ex).Message)
-                    : (true, "");
                 var args = Parse(body, request.Query);
                 var controller = ControllerName(context);
                 var action = controller == "Cluster"
@@ -46,7 +45,22 @@ namespace KubeSpoke.Server.Filters
                     ? RouteValue(context, "method") ?? "Cluster"
                     : $"{controller}/{RouteValue(context, "action")}";
 
-                await audits.RecordAsync(http.User?.Identity?.Name ?? "", action,
+                var actor = http.User?.Identity?.Name ?? "";
+                var (success, message) = executed.Exception is { } ex
+                    ? (false, BXExceptionFilter.Unwrap(ex).Message)
+                    : (true, "");
+
+                // 登录失败是 return Unauthorized(...)，不抛异常，只按异常判会全记成成功。
+                // 只认 Auth 这一个控制器的 401/403：其它接口未登录的探测量大得多，记进来只会淹掉留痕。
+                if (success && controller == "Auth" && IsDenied(executed.Result, out var reason))
+                {
+                    success = false;
+                    message = reason;
+                    // 这一步 http.User 还是未认证的，操作者只能取提交上来的账号名
+                    if (actor.Length == 0) actor = args.Username;
+                }
+
+                await audits.RecordAsync(actor, action,
                     args.Cluster, args.Namespace, args.Resource, args.Detail,
                     http.Connection.RemoteIpAddress?.ToString() ?? "", success, message);
             }
@@ -67,6 +81,41 @@ namespace KubeSpoke.Server.Filters
 
         private static string? RouteValue(ActionContext context, string key) =>
             context.RouteData.Values.TryGetValue(key, out var value) ? value?.ToString() : null;
+
+        /// <summary>
+        /// 动作自己回了 401/403 就算这次操作没成。失败原因优先用响应体里的 message（比如「用户名或密码错误」），
+        /// 没有就用一句通用的。
+        /// </summary>
+        private bool IsDenied(object? result, out string message)
+        {
+            message = "";
+            if (result is not IStatusCodeActionResult { StatusCode: 401 or 403 }) return false;
+
+            if (result is ObjectResult { Value: { } value }) message = ReadMessage(value);
+            if (message.Length == 0) message = "认证未通过";
+            return true;
+        }
+
+        /// <summary>失败提示就放在响应体的 message 字段里，匿名对象没有公共契约，只能序列化一遍再取。</summary>
+        private string ReadMessage(object value)
+        {
+            try
+            {
+                var element = JsonSerializer.SerializeToElement(value);
+                if (element.ValueKind != JsonValueKind.Object) return "";
+
+                foreach (var prop in element.EnumerateObject())
+                    if (prop.Name.Equals("message", StringComparison.OrdinalIgnoreCase)
+                        && prop.Value.ValueKind == JsonValueKind.String)
+                        return prop.Value.GetString() ?? "";
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "[审计解析失败原因失败]");
+            }
+
+            return "";
+        }
 
         /// <summary>
         /// 请求体由 AuditBodyBufferMiddleware 缓冲过，读完复位，控制器照旧能读到原文；
@@ -91,7 +140,8 @@ namespace KubeSpoke.Server.Filters
             }
         }
 
-        record Args(string Cluster, string Namespace, string Resource, string Detail);
+        /// <summary>Username 单拎一列：登录失败时它是唯一能填进操作者列的东西。</summary>
+        record Args(string Cluster, string Namespace, string Resource, string Detail, string Username);
 
         private static Args Parse(string body, IQueryCollection query)
         {
@@ -138,7 +188,8 @@ namespace KubeSpoke.Server.Filters
             var resource = ResourceKeys
                 .Select(key => fields.GetValueOrDefault(key) ?? "")
                 .FirstOrDefault(value => value.Length > 0) ?? "";
-            return new Args(fields.GetValueOrDefault("ClustName") ?? "", fields.GetValueOrDefault("Namespace") ?? "", resource, detail);
+            return new Args(fields.GetValueOrDefault("ClustName") ?? "", fields.GetValueOrDefault("Namespace") ?? "",
+                resource, detail, fields.GetValueOrDefault("Username") ?? "");
         }
     }
 

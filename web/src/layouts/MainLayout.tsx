@@ -146,7 +146,8 @@ export function MainLayout() {
                 loading={loadingAgents}
                 onChange={switchCluster}
                 options={agents.map((a) => ({ label: a.name, value: a.name }))}
-                notFoundContent="没有已接入的集群"
+                notFoundContent={agents.length ? '无匹配集群' : '没有已接入的集群'}
+                showSearch={{ optionFilterProp: 'label' }}
                 variant="filled"
                 className="cursor-pointer"
                 labelRender={(item) => (

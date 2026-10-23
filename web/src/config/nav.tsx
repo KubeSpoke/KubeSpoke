@@ -8,6 +8,7 @@ import {
   ClusterOutlined,
   ContainerOutlined,
   DatabaseOutlined,
+  DeleteOutlined,
   DeploymentUnitOutlined,
   FileTextOutlined,
   FunctionOutlined,
@@ -16,9 +17,12 @@ import {
   HistoryOutlined,
   KeyOutlined,
   PartitionOutlined,
+  PieChartOutlined,
   RetweetOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  SlidersOutlined,
+  StopOutlined,
   TeamOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
@@ -76,7 +80,7 @@ export const clusterPath = (clusterId: string, sub = ''): string => {
 // ---------------------------------------------------------------- 集群管理左侧菜单
 // 1:1 KubeSphere v4.2 集群控制台左侧导航（本机 localhost:30880 实测抓取）：
 // 概览 / 集群节点 / 项目 ｜ 工作负载(部署·有状态副本集·守护进程集·任务·定时任务·容器组·工作负载模板)
-// ｜ 服务与网络(服务·应用路由) ｜ 存储(持久卷声明·存储类)
+// ｜ 服务与网络(服务·应用路由) ｜ 存储(持久卷声明·存储类) ｜ 策略与配额(资源配额·限制范围·中断预算)
 // ｜ 配置(保密字典·配置字典·服务帐户·定制资源定义) ｜ 集群设置(基本信息·集群可见性·集群角色·集群成员)
 // key 为集群作用域内的相对子路径，渲染时由 clusterPath(当前集群, key) 拼成完整路由。
 export const clusterNav: NavGroup[] = [
@@ -92,6 +96,7 @@ export const clusterNav: NavGroup[] = [
     items: [
       { key: 'workloads', label: '工作负载', icon: <DeploymentUnitOutlined /> },
       { key: 'res/pods', label: '容器组', icon: <ContainerOutlined /> },
+      { key: 'res/horizontalpodautoscalers', label: '弹性伸缩', icon: <ThunderboltOutlined /> },
       { key: 'res/workloadtemplates', label: '工作负载模板', icon: <FileTextOutlined /> },
     ],
   },
@@ -109,6 +114,14 @@ export const clusterNav: NavGroup[] = [
     items: [
       { key: 'res/persistentvolumeclaims', label: '持久卷声明', icon: <DatabaseOutlined /> },
       { key: 'res/storageclasses', label: '存储类', icon: <SettingOutlined /> },
+    ],
+  },
+  {
+    title: '策略与配额',
+    items: [
+      { key: 'res/resourcequotas', label: '资源配额', icon: <PieChartOutlined /> },
+      { key: 'res/limitranges', label: '限制范围', icon: <SlidersOutlined /> },
+      { key: 'res/poddisruptionbudgets', label: '中断预算', icon: <StopOutlined /> },
     ],
   },
   {
@@ -135,6 +148,7 @@ export const clusterNav: NavGroup[] = [
     items: [
       { key: '/alerts', label: '告警中心', icon: <AlertOutlined /> },
       { key: '/audit', label: '审计日志', icon: <HistoryOutlined /> },
+      { key: '/recycle', label: '回收站', icon: <DeleteOutlined /> },
       { key: '/settings', label: '系统设置', icon: <SettingOutlined /> },
     ],
   },
@@ -201,6 +215,10 @@ export const resourceDescriptors: Record<string, ResourceDescriptor> = {
     key: 'cronjobs', label: '定时任务', kind: 'CronJob', group: 'batch', version: 'v1',
     plural: 'cronjobs', scope: 'Namespaced', icon: <ClockCircleOutlined />, statusKind: 'none',
   },
+  horizontalpodautoscalers: {
+    key: 'horizontalpodautoscalers', label: '弹性伸缩', kind: 'HorizontalPodAutoscaler', group: 'autoscaling',
+    version: 'v2', plural: 'horizontalpodautoscalers', scope: 'Namespaced', icon: <ThunderboltOutlined />, statusKind: 'conditions',
+  },
   serviceaccounts: {
     key: 'serviceaccounts', label: '服务帐户', kind: 'ServiceAccount', group: '', version: 'v1',
     plural: 'serviceaccounts', scope: 'Namespaced', icon: <TeamOutlined />, statusKind: 'none',
@@ -236,6 +254,18 @@ export const resourceDescriptors: Record<string, ResourceDescriptor> = {
   storageclasses: {
     key: 'storageclasses', label: '存储类', kind: 'StorageClass', group: 'storage.k8s.io', version: 'v1',
     plural: 'storageclasses', scope: 'Cluster', icon: <SettingOutlined />, statusKind: 'none',
+  },
+  resourcequotas: {
+    key: 'resourcequotas', label: '资源配额', kind: 'ResourceQuota', group: '', version: 'v1',
+    plural: 'resourcequotas', scope: 'Namespaced', icon: <PieChartOutlined />, statusKind: 'none',
+  },
+  limitranges: {
+    key: 'limitranges', label: '限制范围', kind: 'LimitRange', group: '', version: 'v1',
+    plural: 'limitranges', scope: 'Namespaced', icon: <SlidersOutlined />, statusKind: 'none',
+  },
+  poddisruptionbudgets: {
+    key: 'poddisruptionbudgets', label: '中断预算', kind: 'PodDisruptionBudget', group: 'policy', version: 'v1',
+    plural: 'poddisruptionbudgets', scope: 'Namespaced', icon: <StopOutlined />, statusKind: 'none',
   },
   customresourcedefinitions: {
     key: 'customresourcedefinitions', label: '定制资源定义', kind: 'CustomResourceDefinition',

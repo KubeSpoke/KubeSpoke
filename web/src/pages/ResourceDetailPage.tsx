@@ -1,4 +1,4 @@
-import { App, Alert, Button, Descriptions, Dropdown, Empty, Input, Modal, Popconfirm, Space, Table, Tabs, Tag, Typography } from 'antd'
+import { App, Alert, Button, Descriptions, Dropdown, Empty, Form, Input, Modal, Popconfirm, Space, Table, Tabs, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { DownOutlined, EyeInvisibleOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
@@ -10,6 +10,10 @@ import { deriveStatus, resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
 import { DetailDrawer } from '../components/DetailDrawer'
 import { EventsPanel } from '../components/EventsPanel'
+import { LabelRowsField } from '../components/LabelRowsField'
+import { confirmApply } from '../components/ApplyGuard'
+import { labelsFromRows } from '../api/payloads'
+import type { LabelRowIn } from '../api/payloads'
 import { EditConfigMapModal } from './config/EditConfigMapModal'
 import type { ConfigMapEditValues } from './config/EditConfigMapModal'
 import { useResource } from '../hooks/useResource'
@@ -112,16 +116,6 @@ function duration(startIso?: string, endIso?: string): string {
   return `${Math.floor(sec / 3600)} 小时 ${Math.floor((sec % 3600) / 60)} 分钟`
 }
 
-/** 编辑信息 / 重建 / 暂停用：改完再打回 YAML 提交，去掉服务端回填的噪声 */
-function cleanForApply(o: K8sObject): K8sObject {
-  const next: K8sObject = structuredClone(o)
-  delete next.status
-  const md = dict(next.metadata)
-  delete md.managedFields
-  delete md.resourceVersion
-  next.metadata = md
-  return next
-}
 
 function withAnnotations(o: K8sObject, patch: Record<string, string>): K8sObject {
   const md = { ...dict(o.metadata) }
@@ -146,6 +140,19 @@ function withConfigData(o: K8sObject, patch: ConfigMapEditValues): K8sObject {
   next.metadata = md
   return withAnnotations(next, { [ANNO_DESC]: patch.description })
 }
+
+/** 标签整体替换：行全删时要连 labels 键一起删掉，别留空对象 */
+function withLabels(o: K8sObject, labels: Record<string, string>): K8sObject {
+  const md = { ...dict(o.metadata) }
+  if (Object.keys(labels).length) md.labels = labels
+  else delete md.labels
+  const next = { ...o, metadata: md }
+  delete next.status
+  return next
+}
+
+/** 编辑信息表单：别名/描述写注解，标签行整体替换 metadata.labels */
+type InfoFormValues = { alias?: string; description?: string; LabelRows?: LabelRowIn[] }
 
 function withRestartAnnotation(o: K8sObject): K8sObject {
   const spec = { ...specOf(o) }
@@ -299,8 +306,7 @@ export function ResourceDetailBody({
   const targetNs = d.scope === 'Namespaced' ? namespace : undefined
 
   const [infoOpen, setInfoOpen] = useState(false)
-  const [aliasDraft, setAliasDraft] = useState('')
-  const [descDraft, setDescDraft] = useState('')
+  const [infoForm] = Form.useForm<InfoFormValues>()
   const [yamlOpen, setYamlOpen] = useState(false)
   const [yamlText, setYamlText] = useState('')
   const [cmEditOpen, setCmEditOpen] = useState(false)
@@ -393,20 +399,50 @@ export function ResourceDetailBody({
   const openInfo = async () => {
     try {
       const obj = await latest()
-      setAliasDraft(obj.metadata?.annotations?.[ANNO_ALIAS] ?? '')
-      setDescDraft(obj.metadata?.annotations?.[ANNO_DESC] ?? '')
+      infoForm.setFieldsValue({
+        alias: obj.metadata?.annotations?.[ANNO_ALIAS] ?? '',
+        description: obj.metadata?.annotations?.[ANNO_DESC] ?? '',
+        LabelRows: Object.entries(obj.metadata?.labels ?? {}).map(([key, value]) => ({ key, value })),
+      })
       setInfoOpen(true)
     } catch (e) {
       message.error((e as Error).message)
     }
   }
 
-  const saveInfo = run(async () => {
-    await resourceApi.applyYaml(cluster, toYaml(cleanForApply(withAnnotations(await latest(), { [ANNO_ALIAS]: aliasDraft.trim(), [ANNO_DESC]: descDraft.trim() }))))
-    message.success('已保存')
-    setInfoOpen(false)
-    refresh()
-  })
+  const persistInfo = (values: InfoFormValues) =>
+    run(async () => {
+      // 编辑场景不按保留键过滤（如 Service 的 app），否则原标签会被一起抹掉
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: d,
+        name: decoded,
+        namespace: targetNs,
+        seeded: data,
+        title: `保存 ${decoded} 的信息？`,
+        okText: '保存',
+        build: (live) =>
+          withLabels(
+            withAnnotations(live, { [ANNO_ALIAS]: values.alias?.trim() ?? '', [ANNO_DESC]: values.description?.trim() ?? '' }),
+            labelsFromRows(values.LabelRows) ?? {},
+          ),
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
+      message.success('已保存')
+      setInfoOpen(false)
+      refresh()
+    })
+
+  const saveInfo = async () => {
+    const values = await infoForm.validateFields().catch(() => null)
+    if (!values) return
+    await persistInfo(values)()
+  }
 
   const saveYaml = run(async () => {
     await resourceApi.applyYaml(cluster, yamlText)
@@ -417,27 +453,68 @@ export function ResourceDetailBody({
 
   const saveConfigData = (values: ConfigMapEditValues) =>
     run(async () => {
-      await resourceApi.applyYaml(cluster, toYaml(cleanForApply(withConfigData(await latest(), values))))
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: d,
+        name: decoded,
+        namespace: targetNs,
+        seeded: data,
+        okText: '保存',
+        build: (live) => withConfigData(live, values),
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
       message.success('已保存')
       setCmEditOpen(false)
       refresh()
     })()
 
   const doRecreate = () => {
-    modal.confirm({
-      title: `重建 ${decoded}？`,
-      content: '将为模板追加重启注解，触发底层容器组滚动重建。',
-      okText: '重建',
-      onOk: run(async () => {
-        await resourceApi.applyYaml(cluster, toYaml(cleanForApply(withRestartAnnotation(await latest()))))
-        message.success('已触发重建')
-        refresh()
-      }),
-    })
+    void run(async () => {
+      const yaml = await confirmApply({
+        modal: modal,
+        cluster,
+        descriptor: d,
+        name: decoded,
+        namespace: targetNs,
+        seeded: data,
+        title: `重建 ${decoded}？`,
+        intro: '会给 Pod 模板打一个重启注解，触发滚动更新。',
+        okText: '重建',
+        build: (live) => withRestartAnnotation(live),
+      })
+      if (yaml === null) {
+        message.info('没有变化')
+        return
+      }
+      await resourceApi.applyYaml(cluster, yaml)
+      message.success('已触发重建')
+      refresh()
+    })()
   }
 
   const doToggleSuspend = run(async () => {
-    await resourceApi.applyYaml(cluster, toYaml(cleanForApply(withSuspend(await latest(), !isSuspend))))
+    const yaml = await confirmApply({
+      modal: modal,
+      cluster,
+      descriptor: d,
+      name: decoded,
+      namespace: targetNs,
+      seeded: data,
+      title: isSuspend ? `恢复 ${decoded}？` : `暂停 ${decoded}？`,
+      intro: isSuspend ? '把 spec.suspend 置为 false，下一个周期起继续调度。' : '把 spec.suspend 置为 true，不再产生新的执行。',
+      okText: isSuspend ? '恢复' : '暂停',
+      build: (live) => withSuspend(live, !isSuspend),
+    })
+    if (yaml === null) {
+      message.info('没有变化')
+      return
+    }
+    await resourceApi.applyYaml(cluster, yaml)
     message.success(isSuspend ? '已恢复' : '已暂停')
     refresh()
   })
@@ -1148,16 +1225,15 @@ export function ResourceDetailBody({
       <Tabs className="ks-tabs px-1" items={tabItems} />
 
       <Modal open={infoOpen} title={`编辑信息 · ${decoded}`} confirmLoading={busy} onCancel={() => setInfoOpen(false)} onOk={saveInfo} okText="确定" cancelText="取消">
-        <div className="space-y-3 py-2">
-          <div>
-            <Typography.Text style={labelStyle}>别名</Typography.Text>
-            <Input className="mt-1" value={aliasDraft} maxLength={63} placeholder="请输入别名" onChange={(e) => setAliasDraft(e.target.value)} />
-          </div>
-          <div>
-            <Typography.Text style={labelStyle}>描述</Typography.Text>
-            <Input.TextArea className="mt-1" value={descDraft} rows={3} placeholder="请输入描述" onChange={(e) => setDescDraft(e.target.value)} />
-          </div>
-        </div>
+        <Form form={infoForm} layout="vertical" autoComplete="off" className="py-2">
+          <Form.Item label="别名" name="alias">
+            <Input maxLength={63} placeholder="请输入别名" />
+          </Form.Item>
+          <Form.Item label="描述" name="description">
+            <Input.TextArea rows={3} placeholder="请输入描述" />
+          </Form.Item>
+          <LabelRowsField />
+        </Form>
       </Modal>
 
       {cmEditOpen && (

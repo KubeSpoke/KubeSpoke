@@ -23,6 +23,7 @@ import { clusterPath } from '../config/nav'
 import type { ResourceDescriptor } from '../config/nav'
 import { useResource } from '../hooks/useResource'
 import { useClusterStore } from '../store/useClusterStore'
+import { MonitorPanel } from '../components/MonitorPanel'
 import { cpuCores, bytes, datetime, percent } from '../utils/format'
 import { internalIp, nodeRolesText, nodeStatusText } from './NodesPage'
 import type { Metrics, V1Event, V1Node } from '../types/k8s'
@@ -374,6 +375,11 @@ export default function DashboardPage() {
                     sub={u && u.diskTotal ? `- / ${(u.diskTotal / 1024 ** 3).toFixed(0)} GiB` : '-'} color="#7c5cff" />
                   <Donut label="网络" pct={null} sub="-" color="#29b6a9" />
                 </div>
+                {data?.metricsAvailable && u && (
+                  <div className="mt-3 border-t pt-3" style={{ borderColor: '#eef1f5' }}>
+                    <MonitorPanel cluster={cluster} kind="cluster" capacity={{ cpu: u.cpuTotal, mem: u.memTotal }} />
+                  </div>
+                )}
               </Panel>
 
               <Panel title="节点状态" extra={

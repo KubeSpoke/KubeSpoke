@@ -21,6 +21,7 @@ namespace KubeSpoke.Server.Extensions
             services.AddScoped<AlertChannelRepository>();
             services.AddScoped<AlertNotifyRepository>();
             services.AddScoped<SystemSettingsRepository>();
+            services.AddScoped<RecycleBinRepository>();
             services.AddScoped<KubeSpoke.Server.Services.AlertNotifier>();
             // 通知送不出去不该把连接堆在工厂里重连，5 秒超时由调用方自己掐
             services.AddHttpClient("alert-webhook");

@@ -42,12 +42,17 @@ export const resourceApi = {
       ...(d.scope === 'Namespaced' && namespace ? { Namespace: namespace } : {}),
     }),
 
+  /**
+   * 删除单个资源。走回收站接口：后端在下发删除前先把对象抓成快照，
+   * saved=false 表示这类不回收（Pod/Secret 等）或快照没抓成，删除本身照常执行。
+   */
   remove: (cluster: string, d: ResourceDescriptor, name: string, namespace?: string) =>
-    post<boolean>('/Cluster/DeleteResource', {
+    post<{ saved: boolean; id?: number }>('/RecycleBin/Delete', {
       ClustName: cluster,
       Group: d.group,
       Version: d.version,
       Plural: d.plural,
+      Kind: d.kind,
       Name: name,
       ...(d.scope === 'Namespaced' && namespace ? { Namespace: namespace } : {}),
     }),

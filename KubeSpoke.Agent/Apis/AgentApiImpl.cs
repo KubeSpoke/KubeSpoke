@@ -845,7 +845,7 @@ namespace KubeSpoke.Agent.Apis
             {
                 // 取流留在调用线程上做：pod 不存在、权限不够这些错要照 RPC 回执原路回给调用方，
                 // 挪进后台任务就成了静默失败——日志面板只会显示一片空白。
-                var stream = client.CoreV1.ReadNamespacedPodLog(request.Name, request.Namespace);
+                var stream = client.CoreV1.ReadNamespacedPodLog(request.Name, request.Namespace, follow: true);
 
                 // 会话已经被关掉了的话 Attach 顺手把这条响应流收走
                 if (!LogSessions.Attach(sessionId, stream))
