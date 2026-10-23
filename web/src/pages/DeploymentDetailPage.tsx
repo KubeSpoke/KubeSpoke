@@ -1,6 +1,6 @@
 import { App, Alert, Button, Drawer, Dropdown, Empty, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Tooltip, Typography } from 'antd'
 import type { TablePaginationConfig } from 'antd'
-import { ContainerOutlined, DownOutlined, ReloadOutlined } from '@ant-design/icons'
+import { ContainerOutlined, DownOutlined, MinusOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { NameCell } from '../components/PageShell'
@@ -220,6 +220,7 @@ export function DeploymentDetailBody({
   const [yamlModal, setYamlModal] = useState<{ title: string; text: string; editable: boolean } | null>(null)
   const [rollbackOpen, setRollbackOpen] = useState(false)
   const [rollbackSel, setRollbackSel] = useState<string>('')
+  const [scaleOpen, setScaleOpen] = useState(false)
   const [settings, setSettings] = useState<{ replicas: number; containers: { name: string; image: string }[] } | null>(null)
   /** 期望副本数的草稿值，null 表示未编辑；换集群/项目/应用时丢弃 */
   const [repDraft, setRepDraft] = useState<number | null>(null)
@@ -234,6 +235,8 @@ export function DeploymentDetailBody({
   const replicasDirty = targetReplicas !== desired
   const ready = Number(status.readyReplicas ?? 0)
   const current = Number(status.replicas ?? 0)
+  const readyTone: 'ok' | 'warn' | 'danger' | 'muted' =
+    desired === 0 ? 'muted' : ready >= desired ? 'ok' : ready === 0 ? 'danger' : 'warn'
   const labels = deploy.data?.metadata?.labels ?? {}
   const appLabel = labels['app.kubernetes.io/name'] || labels['app'] || '-'
   const creator = annotation(deploy.data, CREATOR_KEY) || '-'
@@ -448,6 +451,7 @@ export function DeploymentDetailBody({
       await resourceApi.applyYaml(cluster, yaml)
       message.success(`副本数已调整为 ${targetReplicas}`)
       setRepDraft(null)
+      setScaleOpen(false)
       refreshAll()
       onChanged?.()
     } catch (e) {
@@ -607,51 +611,49 @@ export function DeploymentDetailBody({
               label: '资源状态',
               children: (
                 <div className="p-4">
-                  <div className="mb-5 flex items-end gap-6">
-                    <div>
-                      <div className="text-4xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                  <div className="mb-6 grid grid-cols-3 divide-x divide-[#edf1f6] overflow-hidden rounded-lg border border-[#edf1f6] bg-[#fafbfc]">
+                    <div className="px-5 py-4">
+                      <div className="flex items-center gap-2 text-xs text-[#8f9aa9]">
+                        <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[readyTone] }} />
+                        就绪副本
+                      </div>
+                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
                         {ready}
+                        <span className="ml-1 text-sm font-normal text-[#8f9aa9]">/ {desired}</span>
                       </div>
-                      <div className="mt-1 text-xs text-[#8f9aa9]">副本</div>
                     </div>
-                    <div className="text-sm text-[#5c6b80]">
-                      <div className="flex items-center gap-2">
-                        <span className="whitespace-nowrap">期望副本数:</span>
-                        <InputNumber
-                          size="small"
-                          min={0}
-                          value={targetReplicas}
-                          onChange={(v) => setRepDraft(Number(v ?? 0))}
-                          onPressEnter={() => void submitReplicas()}
-                          className="!w-[72px]"
-                        />
-                        {replicasDirty && (
-                          <>
-                            <Button
-                              size="small"
-                              type="link"
-                              className="!px-1"
-                              loading={busy}
-                              onClick={() => void submitReplicas()}
-                            >
-                              {targetReplicas === 0 ? '停止' : '调整'}
-                            </Button>
-                            <Button size="small" type="text" className="!px-1" disabled={busy} onClick={() => setRepDraft(null)}>
-                              取消
-                            </Button>
-                          </>
-                        )}
-                        {hpa && (
-                          <Tooltip
-                            title={`由弹性伸缩 ${hpa.metadata?.name ?? ''} 托管，副本数会被自动调整，此处手改不会生效`}
-                          >
-                            <Tag color="orange" variant="filled" className="!mr-0">
-                              {`HPA 托管${hpaRange}`}
-                            </Tag>
-                          </Tooltip>
-                        )}
+                    <div className="px-5 py-4">
+                      <div className="text-xs text-[#8f9aa9]">当前副本</div>
+                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                        {current}
                       </div>
-                      <div className="mt-1">当前副本数: {current}</div>
+                    </div>
+                    <div className="flex items-center justify-between px-5 py-4">
+                      <div>
+                        <div className="text-xs text-[#8f9aa9]">期望副本</div>
+                        <div className="mt-2 flex items-center gap-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                          {desired}
+                          {hpa && (
+                            <Tooltip
+                              title={`由弹性伸缩 ${hpa.metadata?.name ?? ''} 托管，副本数会被自动调整，手动扩缩容不会生效`}
+                            >
+                              <Tag color="orange" variant="filled" className="!mr-0 text-xs">
+                                {`HPA 托管${hpaRange}`}
+                              </Tag>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        size="small"
+                        disabled={!cluster || busy}
+                        onClick={() => {
+                          setRepDraft(null)
+                          setScaleOpen(true)
+                        }}
+                      >
+                        扩缩容
+                      </Button>
                     </div>
                   </div>
 
@@ -1087,6 +1089,55 @@ export function DeploymentDetailBody({
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={scaleOpen}
+        title={`扩缩容 · ${depName}`}
+        width={420}
+        onCancel={() => {
+          setScaleOpen(false)
+          setRepDraft(null)
+        }}
+        onOk={() => void submitReplicas()}
+        okText="调整"
+        okButtonProps={{ disabled: !replicasDirty, loading: busy }}
+        confirmLoading={busy}
+      >
+        <div className="flex flex-col gap-4 py-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-[#5c6b80]">当前副本数</span>
+            <span className="font-medium" style={{ color: '#15233a' }}>
+              {current}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[#5c6b80]">期望副本数</span>
+            <Space.Compact>
+              <Button
+                icon={<MinusOutlined />}
+                disabled={busy || targetReplicas <= 0}
+                onClick={() => setRepDraft(targetReplicas - 1)}
+              />
+              <InputNumber
+                min={0}
+                controls={false}
+                value={targetReplicas}
+                onChange={(v) => setRepDraft(Number(v ?? 0))}
+                onPressEnter={() => void submitReplicas()}
+                className="!w-[72px] [&_input]:text-center"
+              />
+              <Button icon={<PlusOutlined />} disabled={busy} onClick={() => setRepDraft(targetReplicas + 1)} />
+            </Space.Compact>
+          </div>
+          {hpa && (
+            <Alert
+              type="warning"
+              showIcon
+              message={`由弹性伸缩 ${hpa.metadata?.name ?? ''} 托管，副本数会被自动调整，手动扩缩容不会生效`}
+            />
+          )}
+        </div>
       </Modal>
 
       <Drawer open={!!logPod} onClose={() => setLogPod(null)} size={760} title={`容器组日志 · ${logPod ?? ''}`} destroyOnHidden>
