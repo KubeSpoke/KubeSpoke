@@ -1,6 +1,7 @@
 import {
   AlertOutlined,
   ApartmentOutlined,
+  ApiOutlined,
   BarChartOutlined,
   BlockOutlined,
   ClockCircleOutlined,
@@ -107,6 +108,12 @@ export const clusterNav: NavGroup[] = [
       { key: 'services/ingresses', label: 'Ingress', icon: <PartitionOutlined /> },
       { key: 'services/dns', label: 'DNS', icon: <ApartmentOutlined /> },
       { key: 'services/endpoints', label: 'Endpoint', icon: <ThunderboltOutlined /> },
+    ],
+  },
+  {
+    title: '内网穿透',
+    items: [
+      { key: 'tunnels', label: '穿透隧道', icon: <ApiOutlined /> },
     ],
   },
   {

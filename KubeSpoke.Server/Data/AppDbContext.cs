@@ -177,6 +177,43 @@ namespace KubeSpoke.Server.Data
         public string Value { get; set; } = "";
     }
 
+    /// <summary>
+    /// 一条内网穿透隧道。agent 按此配置在目标集群拉起 fasttunnel-client Pod（PodName），
+    /// 由该 Pod 主动连接外部 FastTunnel 服务端建立穿透。隧道的实时状态不落库，按需查 Pod。
+    /// Token 属于凭据：落库是为了重建/展示，但列表接口不回传，审计白名单也不含它。
+    /// </summary>
+    public class TunnelEntity
+    {
+        public long Id { get; set; }
+
+        /// <summary>集群标识（agent 的 ClustName）。</summary>
+        public string Cluster { get; set; } = "";
+
+        /// <summary>隧道显示名，用户自填。</summary>
+        public string Name { get; set; } = "";
+
+        /// <summary>fasttunnel-client Pod 所在命名空间。</summary>
+        public string Namespace { get; set; } = "default";
+
+        /// <summary>agent 建出来的 Pod 名，删除/查状态时点名用。</summary>
+        public string PodName { get; set; } = "";
+
+        public string Image { get; set; } = "";
+
+        public string ServerAddr { get; set; } = "";
+        public int ServerPort { get; set; }
+        public string Token { get; set; } = "";
+
+        /// <summary>HTTP 穿透条目的 JSON 数组（FastTunnelConfig.Web[]）。</summary>
+        public string WebsJson { get; set; } = "[]";
+
+        /// <summary>端口转发条目的 JSON 数组（FastTunnelConfig.Forward[]）。</summary>
+        public string ForwardsJson { get; set; } = "[]";
+
+        public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+        public string CreatedBy { get; set; } = "";
+    }
+
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
         public DbSet<UserEntity> Users => Set<UserEntity>();
@@ -193,6 +230,8 @@ namespace KubeSpoke.Server.Data
 
         public DbSet<DeletedObjectEntity> DeletedObjects => Set<DeletedObjectEntity>();
 
+        public DbSet<TunnelEntity> Tunnels => Set<TunnelEntity>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<UserEntity>().HasIndex(u => u.Username).IsUnique();
@@ -202,6 +241,7 @@ namespace KubeSpoke.Server.Data
             builder.Entity<AlertNotifyLogEntity>().HasIndex(l => l.TimeUtc);
             builder.Entity<DeletedObjectEntity>().HasIndex(d => d.TimeUtc);
             builder.Entity<DeletedObjectEntity>().HasIndex(d => d.ExpiresUtc);
+            builder.Entity<TunnelEntity>().HasIndex(t => t.Cluster);
             builder.Entity<SettingEntity>().HasKey(s => s.Key);
         }
     }

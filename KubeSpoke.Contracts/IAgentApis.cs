@@ -221,5 +221,11 @@ namespace KubeSpoke.Contracts
         /// <returns></returns>
         [MaxWaitSec(Sec = 15)]
         public List<AlertSignal> GetAlertSignals(GetAlertSignalsRequest request);
+
+        /// <summary>
+        /// 在集群里拉起一个 fasttunnel-client Pod 建立内网穿透（连接外部 FastTunnel 服务端）。
+        /// 配置以 FastTunnel__* 环境变量注入容器；返回建出来的 Pod，隧道落库由服务端负责。
+        /// </summary>
+        public V1Pod CreateFastTunnelClient(CreateFastTunnelClientRequest request);
     }
 }

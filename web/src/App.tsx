@@ -21,6 +21,7 @@ import ResourceDetailPage from './pages/ResourceDetailPage'
 import ResourceListPage from './pages/ResourceListPage'
 import ServicesPage from './pages/ServicesPage'
 import SystemSettingsPage from './pages/SystemSettingsPage'
+import TunnelsPage from './pages/TunnelsPage'
 import WorkloadsPage from './pages/WorkloadsPage'
 import BaseInfoPage from './pages/settings/BaseInfoPage'
 import ClusterRolesPage from './pages/settings/ClusterRolesPage'
@@ -141,6 +142,7 @@ export default function App() {
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="workloads" element={<WorkloadsPage />} />
             <Route path="services/:tab?" element={<ServicesPage />} />
+            <Route path="tunnels" element={<TunnelsPage />} />
             <Route path="deployments" element={<ClusterSubRedirect sub="workloads" />} />
             <Route path="deployments/:namespace/:name" element={<DeploymentDetailPage />} />
 
