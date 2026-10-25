@@ -2,6 +2,7 @@
 using KubeSpoke.Agent.Connecting;
 using KubeSpoke.Agent.HostedServices;
 using KubeSpoke.Agent.Models;
+using KubeSpoke.Agent.Services;
 using KubeSpoke.Contracts;
 using KubeSpoke.Contracts.Dtos;
 using k8s;
@@ -68,6 +69,7 @@ namespace KubeSpoke.Agent
                         .AddSingleton<AgentServiceConfigProvider>()
                         .AddSingleton<SignalRConnection>()
                         .AddSingleton<RPCRequestHandler>()
+                        .AddSingleton<HelmCli>()
                         .AddSingleton<IAgentApis, AgentApiImpl>()
                         .AddSingleton<IAlertor, WeixinWorkRebotAlertor>()
                         .AddSingleton<AgentService>();

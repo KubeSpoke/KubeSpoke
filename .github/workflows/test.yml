@@ -2,7 +2,7 @@ name: Test CI
 
 # 只跑不依赖真实集群的用例：
 #   KubeSpoke.ServerTests   —— 全部（RPC 超时看门狗的记账）
-#   KubeSpoke.AgentTests    —— 只挑 LogSessionsTests（日志推流会话表）
+#   KubeSpoke.AgentTests    —— LogSessionsTests（日志推流会话表）+ KubeSpoke.Agent.Services.Tests（helm CLI/输出归一、chart 索引解析、镜像引用拆解）
 # AgentTests 其余用例要现场连一个真集群打 K8s 接口（本机实测 27 条挂在 404 上），
 # CI 里没有集群，全跑只会把真信号埋进一堆环境噪声。
 # 往后往 AgentTests 里加不依赖集群的测试类，记得同步改下面那条 --filter——
@@ -50,7 +50,7 @@ jobs:
         run: >
           dotnet test KubeSpoke.AgentTests/KubeSpoke.AgentTests.csproj
           --no-restore --configuration Release
-          --filter "FullyQualifiedName~LogSessionsTests"
+          --filter "FullyQualifiedName~LogSessionsTests|FullyQualifiedName~KubeSpoke.Agent.Services.Tests"
           --logger "trx;LogFileName=agent.trx"
           --results-directory TestResults
 

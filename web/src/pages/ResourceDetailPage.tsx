@@ -1,6 +1,6 @@
 import { App, Alert, Button, Descriptions, Dropdown, Empty, Form, Input, Modal, Popconfirm, Space, Table, Tabs, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { DownOutlined, EyeInvisibleOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons'
+import { DownOutlined, EditOutlined, EyeInvisibleOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -130,7 +130,7 @@ function withAnnotations(o: K8sObject, patch: Record<string, string>): K8sObject
   return next
 }
 
-/** 配置字典编辑：data 与 labels 整体替换，描述写注解，其余字段（binaryData 等）原样保留 */
+/** 配置字典编辑：data 与 labels 整体替换，别名/描述写注解，其余字段（binaryData 等）原样保留 */
 function withConfigData(o: K8sObject, patch: ConfigMapEditValues): K8sObject {
   const next: K8sObject = structuredClone(o)
   next.data = patch.data
@@ -138,7 +138,7 @@ function withConfigData(o: K8sObject, patch: ConfigMapEditValues): K8sObject {
   if (Object.keys(patch.labels).length) md.labels = patch.labels
   else delete md.labels
   next.metadata = md
-  return withAnnotations(next, { [ANNO_DESC]: patch.description })
+  return withAnnotations(next, { [ANNO_ALIAS]: patch.alias, [ANNO_DESC]: patch.description })
 }
 
 /** 标签整体替换：行全删时要连 labels 键一起删掉，别留空对象 */
@@ -198,12 +198,15 @@ function DerivedText({ d, o }: { d: ResourceDescriptor; o: K8sObject }) {
   return <span style={{ ...valueStyle, color: TONE_COLOR[s.tone] }}>{s.text}</span>
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
     <div className="mb-6">
-      <Typography.Text strong className="!text-[13px]">
-        {title}
-      </Typography.Text>
+      <div className="flex items-center justify-between">
+        <Typography.Text strong className="!text-[13px]">
+          {title}
+        </Typography.Text>
+        {extra}
+      </div>
       <div className="mt-2">{children}</div>
     </div>
   )
@@ -904,7 +907,14 @@ export function ResourceDetailBody({
       const binRows = Object.entries(dict(dict(data).binaryData)).map(([k, v]) => ({ name: k, size: b64decode(String(v ?? '')).length }))
       return (
         <>
-          <Section title="数据">
+          <Section
+            title="数据"
+            extra={
+              <Button size="small" icon={<EditOutlined />} onClick={() => setCmEditOpen(true)}>
+                编辑数据项
+              </Button>
+            }
+          >
             <Table
               rowKey="name"
               size="small"
@@ -1246,8 +1256,10 @@ export function ResourceDetailBody({
           initial={{
             items: Object.entries(dict(data?.data)).map(([key, value]) => ({ key, value: text(value) ?? '' })),
             LabelRows: Object.entries(dict(data?.metadata?.labels)).map(([key, value]) => ({ key, value: text(value) ?? '' })),
+            Alias: data?.metadata?.annotations?.[ANNO_ALIAS] ?? '',
             Description: data?.metadata?.annotations?.[ANNO_DESC] ?? '',
           }}
+          binaryKeys={Object.keys(dict(data?.binaryData))}
           onSubmit={saveConfigData}
         />
       )}

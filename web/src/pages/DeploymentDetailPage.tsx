@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { NameCell } from '../components/PageShell'
 import { DetailDrawer } from '../components/DetailDrawer'
 import EventsPanel from '../components/EventsPanel'
+import ImageVersionSelect from '../components/ImageVersionSelect'
 import PodLogStream from '../components/PodLogStream'
 import { PodTerminal } from '../components/PodTerminal'
 import { confirmApply } from '../components/ApplyGuard'
@@ -583,21 +584,42 @@ export function DeploymentDetailBody({
           </span>
         </div>
 
-        {/* 属性条：集群 / 项目 / 应用 / 创建时间 / 更新时间 / 创建者 */}
+        {/* 属性条：集群 / 项目 / 应用 / 镜像 / 创建时间 / 更新时间 / 创建者 */}
         <div className="mt-1 flex flex-wrap gap-x-14 gap-y-3">
-          {[
+          {([
             { label: '集群', value: cluster },
             { label: '项目', value: ns },
             { label: '应用', value: appLabel },
+            // 多容器时每个容器一条，标题带上容器名，免得下拉切错了容器
+            ...containers.map((c, i) => ({
+              label: containers.length > 1 ? `镜像 · ${c.name || `#${i + 1}`}` : '镜像',
+              node: (
+                <ImageVersionSelect
+                  cluster={cluster}
+                  namespace={ns}
+                  name={depName}
+                  containerName={c.name}
+                  image={c.image ?? ''}
+                  onChanged={() => {
+                    refreshAll()
+                    onChanged?.()
+                  }}
+                />
+              ),
+            })),
             { label: '创建时间', value: datetime(deploy.data?.metadata?.creationTimestamp) },
             { label: '更新时间', value: datetime(updateTime(deploy.data) || undefined) },
             { label: '创建者', value: creator },
-          ].map((it) => (
+          ] as { label: string; value?: string; node?: React.ReactNode }[]).map((it) => (
             <div key={it.label} className="min-w-0">
               <div className="text-xs text-[#8f9aa9]">{it.label}</div>
-              <div className="mt-1 truncate text-sm font-medium" style={{ color: '#15233a' }} title={it.value}>
-                {it.value}
-              </div>
+              {it.node ? (
+                <div className="mt-1 text-sm font-medium">{it.node}</div>
+              ) : (
+                <div className="mt-1 truncate text-sm font-medium" style={{ color: '#15233a' }} title={it.value}>
+                  {it.value}
+                </div>
+              )}
             </div>
           ))}
         </div>

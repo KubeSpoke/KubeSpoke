@@ -2,6 +2,7 @@ import {
   AlertOutlined,
   ApartmentOutlined,
   ApiOutlined,
+  AppstoreOutlined,
   BarChartOutlined,
   BlockOutlined,
   ClockCircleOutlined,
@@ -22,6 +23,7 @@ import {
   RetweetOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  ShopOutlined,
   SlidersOutlined,
   StopOutlined,
   TeamOutlined,
@@ -99,6 +101,14 @@ export const clusterNav: NavGroup[] = [
       { key: 'res/pods', label: '容器组', icon: <ContainerOutlined /> },
       { key: 'res/horizontalpodautoscalers', label: '弹性伸缩', icon: <ThunderboltOutlined /> },
       { key: 'res/workloadtemplates', label: '工作负载模板', icon: <FileTextOutlined /> },
+    ],
+  },
+  {
+    title: 'Helm 应用',
+    items: [
+      { key: 'helm', label: '应用市场', icon: <ShopOutlined /> },
+      { key: 'helm/releases', label: '已安装应用', icon: <AppstoreOutlined /> },
+      { key: 'helm/repos', label: 'Chart 仓库', icon: <DatabaseOutlined /> },
     ],
   },
   {

@@ -61,6 +61,7 @@ const LABELS: Record<string, string> = {
   editRules: '编辑路由规则',
   editAnnotations: '编辑注解',
   editSettings: '编辑设置',
+  editData: '编辑数据项',
   delete: '删除',
 }
 
@@ -75,7 +76,7 @@ const ACTIONS_BY_KEY: Record<string, string[]> = {
   persistentvolumeclaims: ['editInfo', 'editYaml', 'delete'],
   storageclasses: ['editInfo', 'delete'],
   secrets: ['editInfo', 'editYaml', 'editSettings', 'delete'],
-  configmaps: ['editInfo', 'editYaml', 'editSettings', 'delete'],
+  configmaps: ['editInfo', 'editYaml', 'editData', 'delete'],
   serviceaccounts: ['editInfo', 'editYaml', 'delete'],
   workloadtemplates: ['editInfo', 'delete'],
 }
@@ -90,6 +91,7 @@ const MODAL_ACTIONS = new Set([
   'editRules',
   'editAnnotations',
   'editSettings',
+  'editData',
 ])
 
 const rand5 = () => Math.random().toString(36).replace(/[^a-z0-9]/g, 'x').padEnd(5, '0').slice(0, 5)
@@ -460,10 +462,8 @@ function KvBody({
       const rows = Object.entries(strMap(asRec(obj).data)).map(([key, value]) => ({ key, value: b64dec(value) }))
       return rows.length ? rows : empty
     }
-    const rows = [
-      ...Object.entries(strMap(asRec(obj).data)).map(([key, value]) => ({ key, value })),
-      ...Object.keys(strMap(asRec(obj).binaryData)).map((key) => ({ key, value: '' })),
-    ]
+    // binaryData 条目无法当文本编辑，不列进来了（列表里只读展示），否则保存会把二进制抹成空串
+    const rows = Object.entries(strMap(asRec(obj).data)).map(([key, value]) => ({ key, value }))
     return rows.length ? rows : empty
   }
   const [rows, setRows] = useState<KvRow[]>(initial)
@@ -489,15 +489,16 @@ function KvBody({
         } else {
           const payload: Rec = next as unknown as Rec
           delete payload.data
-          delete payload.binaryData
           if (asRec(base).kind === 'Secret') {
             // secret 走 stringData（applyYaml 后端可建），保留原 type
             if (asStr(base.type)) payload.type = asStr(base.type)
             payload.stringData = map
           } else {
+            // binaryData 原样保留，但 data 与它的键空间共用，冲突时交给 API 拒绝前先拦下
+            const clash = Object.keys(map).filter((k) => k in strMap(asRec(base).binaryData))
+            if (clash.length) throw new Error(`数据项 ${clash.join('、')} 与二进制数据重名`)
             payload.data = map
           }
-          // secret/configmap 顶层字段可能被 stripStatus 的浅拷贝丢掉？JSON 深拷贝保留全字段，无需处理
         }
         return next
       })
@@ -723,6 +724,7 @@ export function useKsActions(ctx: KsActionCtx): {
     editRules: `编辑路由规则 - ${nameOf(pending?.o ?? {})}`,
     editAnnotations: `编辑注解 - ${nameOf(pending?.o ?? {})}`,
     editSettings: `编辑设置 - ${nameOf(pending?.o ?? {})}`,
+    editData: `编辑数据项 - ${nameOf(pending?.o ?? {})}`,
   }
 
   let body: ReactNode = null
@@ -752,6 +754,7 @@ export function useKsActions(ctx: KsActionCtx): {
       case 'editAnnotations':
         body = <KvBody key={pending.seq} mode="annotations" empty={[{ key: '', value: '' }]} {...common} />
         break
+      case 'editData':
       case 'editSettings':
         body = <KvBody key={pending.seq} mode="data" empty={[{ key: '', value: '' }]} {...common} />
         break

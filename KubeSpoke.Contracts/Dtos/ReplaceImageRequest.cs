@@ -13,5 +13,8 @@ namespace KubeSpoke.Contracts.Dtos
         public string Namespace { get; set; }
 
         public string Image { get; set; }
+
+        /// <summary>要改哪个容器；留空则改第一个（历史行为）</summary>
+        public string ContainerName { get; set; }
     }
 }

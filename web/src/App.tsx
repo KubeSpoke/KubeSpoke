@@ -10,6 +10,7 @@ import ChangePasswordPage from './pages/ChangePasswordPage'
 import ClustersManagePage from './pages/ClustersManagePage'
 import DashboardPage from './pages/DashboardPage'
 import DeploymentDetailPage from './pages/DeploymentDetailPage'
+import HelmPage from './pages/HelmPage'
 import InitPage from './pages/InitPage'
 import LoginPage from './pages/LoginPage'
 import NodeDetailPage from './pages/NodeDetailPage'
@@ -142,6 +143,7 @@ export default function App() {
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="workloads" element={<WorkloadsPage />} />
             <Route path="services/:tab?" element={<ServicesPage />} />
+            <Route path="helm/:tab?" element={<HelmPage />} />
             <Route path="tunnels" element={<TunnelsPage />} />
             <Route path="deployments" element={<ClusterSubRedirect sub="workloads" />} />
             <Route path="deployments/:namespace/:name" element={<DeploymentDetailPage />} />

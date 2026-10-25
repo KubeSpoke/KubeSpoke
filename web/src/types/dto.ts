@@ -54,3 +54,14 @@ export interface CanaryApp {
   service?: string
   deployment?: string
 }
+
+/** 镜像仓库的 tag 清单；字段是 camelCase（服务端 MVC 的序列化口径） */
+export interface ImageTags {
+  registry: string
+  repository: string
+  tags: string[]
+  /** 凭证来源：anonymous 或 secret:命名空间/名称 */
+  credential: string
+  /** 拉不到或只列了前 N 个的说明，正常为空串 */
+  notice: string
+}

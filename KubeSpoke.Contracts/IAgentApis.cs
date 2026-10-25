@@ -169,6 +169,13 @@ namespace KubeSpoke.Contracts
 
         public V1Deployment ReplaceImage(ReplaceImageRequest request);
 
+        /// <summary>
+        /// 列出镜像仓库里某仓库路径的 tag，按版本号倒序。凭证优先取该命名空间里已有的
+        /// imagePullSecrets，不在库里另存第三方密钥；取不到就匿名拉（公开仓库够用）。
+        /// </summary>
+        [MaxWaitSec(Sec = 20)]
+        public ImageTags ListImageTags(ListImageTagsRequest request);
+
         public V1Pod GetPodStatus(ReadPodLogRequest request);
 
         public IEnumerable<Corev1Event> GetEvents(GetEventsRequest request);
@@ -227,5 +234,51 @@ namespace KubeSpoke.Contracts
         /// 配置以 FastTunnel__* 环境变量注入容器；返回建出来的 Pod，隧道落库由服务端负责。
         /// </summary>
         public V1Pod CreateFastTunnelClient(CreateFastTunnelClientRequest request);
+
+        // ---- Helm 应用 ----
+        // 装应用的权威实现是 helm 自己的 CLI，代理端只做进程调用与结果归一：不去找 .NET 的 helm 移植，
+        // 因为 chart 的模板渲染、钩子与三方合并只要有一处不一致，装出来的东西就和操作人手里那条
+        // helm 命令对不上，排查时谁都不认。
+        // 窗口的分寸：helm 不等就绪时几秒就返回（写完 release 的秘密就结束），真正可能拖久的是
+        // 索引下载与显式 --wait，所以列表类只放宽到几十秒，写操作单独给到 5 分钟。
+
+        /// <summary>探测代理端能不能跑 helm。老镜像里没有这个可执行文件，界面据此提示重新下发 agent。</summary>
+        [MaxWaitSec(Sec = 15)]
+        public HelmCapability CheckHelmAvailability(HelmCapabilityRequest request);
+
+        /// <summary>列 release，Namespace 为空则全集群。</summary>
+        [MaxWaitSec(Sec = 30)]
+        public List<HelmRelease> ListHelmReleases(HelmListReleasesRequest request);
+
+        /// <summary>一个 release 的修订历史，回滚的候选来自这里。</summary>
+        [MaxWaitSec(Sec = 30)]
+        public List<HelmRevision> GetHelmHistory(GetHelmHistoryRequest request);
+
+        /// <summary>release 的生效值、清单与安装说明（要在容器里跑三次 helm，所以窗口比单条命令宽）。</summary>
+        [MaxWaitSec(Sec = 45)]
+        public HelmReleaseDetail GetHelmRelease(GetHelmReleaseRequest request);
+
+        /// <summary>
+        /// 取仓库 index.yaml 并解析成卡片。bitnami 级别的索引有几十 MB，
+        /// 所以这步不物化整份 YAML（见 ChartIndex），也只在这条 RPC 里做网络活。
+        /// </summary>
+        [MaxWaitSec(Sec = 90)]
+        public List<HelmChart> ListHelmCharts(ListHelmChartsRequest request);
+
+        /// <summary>渲染 chart 得到多文档 YAML，供安装前预览；不连集群、不落任何 release。</summary>
+        [MaxWaitSec(Sec = 90)]
+        public string RenderHelmTemplate(RenderHelmTemplateRequest request);
+
+        [MaxWaitSec(Sec = 300)]
+        public HelmOperation InstallHelmChart(InstallHelmChartRequest request);
+
+        [MaxWaitSec(Sec = 300)]
+        public HelmOperation UpgradeHelmChart(UpgradeHelmChartRequest request);
+
+        [MaxWaitSec(Sec = 300)]
+        public HelmOperation RollbackHelmChart(RollbackHelmChartRequest request);
+
+        [MaxWaitSec(Sec = 60)]
+        public HelmOperation UninstallHelmChart(UninstallHelmChartRequest request);
     }
 }

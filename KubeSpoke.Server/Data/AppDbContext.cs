@@ -214,6 +214,32 @@ namespace KubeSpoke.Server.Data
         public string CreatedBy { get; set; } = "";
     }
 
+    /// <summary>
+    /// 一个 Helm chart 仓库（应用市场的一路来源）。
+    /// Username/Password 属于凭据：落库是为了每次装应用时现取现用，但列表接口不回传口令，
+    /// 审计白名单里也没有 Password，所以它既不出现在响应里也不留在留痕里。
+    /// 仓库内容（chart 列表）不入库，只在内存里按 TTL 缓存，避免库里的目录和上游脱节。
+    /// </summary>
+    public class HelmRepoEntity
+    {
+        public long Id { get; set; }
+
+        /// <summary>显示名，也是浏览器引用这一路仓库用的键，全站唯一。</summary>
+        public string Name { get; set; } = "";
+
+        /// <summary>仓库根地址（http(s)，index.yaml 由代理端按这个地址去取）。</summary>
+        public string Url { get; set; } = "";
+
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+
+        /// <summary>自建镜像仓库常用自签证书，勾了它代理端才不校验服务端证书。</summary>
+        public bool Insecure { get; set; }
+
+        public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+        public string CreatedBy { get; set; } = "";
+    }
+
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
         public DbSet<UserEntity> Users => Set<UserEntity>();
@@ -232,6 +258,8 @@ namespace KubeSpoke.Server.Data
 
         public DbSet<TunnelEntity> Tunnels => Set<TunnelEntity>();
 
+        public DbSet<HelmRepoEntity> HelmRepos => Set<HelmRepoEntity>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<UserEntity>().HasIndex(u => u.Username).IsUnique();
@@ -242,6 +270,7 @@ namespace KubeSpoke.Server.Data
             builder.Entity<DeletedObjectEntity>().HasIndex(d => d.TimeUtc);
             builder.Entity<DeletedObjectEntity>().HasIndex(d => d.ExpiresUtc);
             builder.Entity<TunnelEntity>().HasIndex(t => t.Cluster);
+            builder.Entity<HelmRepoEntity>().HasIndex(r => r.Name).IsUnique();
             builder.Entity<SettingEntity>().HasKey(s => s.Key);
         }
     }

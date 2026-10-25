@@ -16,6 +16,7 @@ import { PodDetailDrawer } from './PodDetailPage'
 import { ResourceDetailDrawer } from './ResourceDetailPage'
 import { deriveStatus, resourceApi, toItems } from '../api/resources'
 import type { K8sObject } from '../api/resources'
+import ImageVersionSelect from '../components/ImageVersionSelect'
 import { resourceDescriptors } from '../config/nav'
 import type { ResourceDescriptor } from '../config/nav'
 import { useResource } from '../hooks/useResource'
@@ -625,7 +626,15 @@ export default function WorkloadsPage() {
             {
               title: '镜像',
               ellipsis: true,
-              render: (_, r) => <span className="kbd-mono text-xs">{mainImage(r.d, r.o)}</span>,
+              render: (_, r) => {
+                const img = mainImage(r.d, r.o)
+                // 只有 Deployment 能就地换镜像；其余类型的镜像属于各自 spec，走编辑 YAML
+                return r.d.key === 'deployments' ? (
+                  <ImageVersionSelect cluster={cluster} namespace={r.ns} name={r.name} image={img} onChanged={refresh} />
+                ) : (
+                  <span className="kbd-mono text-xs">{img}</span>
+                )
+              },
             },
             {
               title: '副本数',

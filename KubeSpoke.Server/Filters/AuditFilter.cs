@@ -14,7 +14,7 @@ namespace KubeSpoke.Server.Filters
     public class AuditFilter(AuditRepository audits, ILogger<AuditFilter> logger) : IAsyncActionFilter
     {
         /// <summary>集群、命名空间、资源名单独成列，其余这些字段拼进摘要。</summary>
-        private static readonly string[] DetailKeys = ["Container", "ContainerName", "Command", "Replicas", "Image", "Weight", "Username", "Role", "Kind", "Server", "Id", "Minutes", "RpcTimeoutSec"];
+        private static readonly string[] DetailKeys = ["Container", "ContainerName", "Command", "Replicas", "Image", "Weight", "Username", "Role", "Kind", "Server", "Id", "Minutes", "RpcTimeoutSec", "Chart", "Version", "Revision"];
 
         /// <summary>资源名在各接口里叫法不一（Name / PodName / AppName…），按这个顺序取第一个有的。</summary>
         private static readonly string[] ResourceKeys = ["Name", "PodName", "AppName", "IngressClassName", "TargetName", "UserName"];

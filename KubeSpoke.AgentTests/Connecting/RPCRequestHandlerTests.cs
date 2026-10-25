@@ -10,6 +10,7 @@ using k8s;
 using KubeSpoke.Contracts.Dtos;
 using k8s.Models;
 using Microsoft.Extensions.Logging;
+using KubeSpoke.Agent.Services;
 using KubeSpoke.Agent.Apis;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,7 +34,7 @@ namespace KubeSpoke.Agent.Connecting.Tests
 
             var log = provider.GetRequiredService<ILogger<AgentApiImpl>>();
 
-            var impl = new AgentApiImpl(client, null, log);
+            var impl = new AgentApiImpl(client, null, new HelmCli(provider.GetRequiredService<ILogger<HelmCli>>()), log);
 
             var f = LoggerFactory.Create(x => { });
             Handler = new RPCRequestHandler(impl, f.CreateLogger<RPCRequestHandler>());

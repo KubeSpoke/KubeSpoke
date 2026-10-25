@@ -3,6 +3,7 @@ import type {
   CanaryApp,
   ClusterAgent,
   Deployment,
+  ImageTags,
   Ingress,
   Namespace,
   Secret,
@@ -115,8 +116,13 @@ export const clusterApi = {
         params: { ClustName: c, Namespace: namespace, Name: name },
       })
       .then((r) => r.data),
-  replaceImage: (c: string, payload: { Name: string; Namespace: string; Image: string }) =>
-    create<V1Deployment>('ReplaceImage', { ClustName: c, ...payload }),
+  replaceImage: (
+    c: string,
+    payload: { Name: string; Namespace: string; Image: string; ContainerName?: string },
+  ) => create<V1Deployment>('ReplaceImage', { ClustName: c, ...payload }),
+  /** 列某个镜像在仓库里的 tag，倒序；代理端走 registry v2，凭证取自该命名空间的 imagePullSecret */
+  imageTags: (c: string, image: string, namespace?: string) =>
+    invoke<ImageTags>('ListImageTags', { ClustName: c, Image: image, ...(namespace ? { Namespace: namespace } : {}) }),
   replicaScale: (c: string, namespace: string, name: string) =>
     invoke<V1Scale>('GetReplicaSetScale', { ClustName: c, Namespace: namespace, Name: name }),
   replicaSets: (c: string, namespace?: string) =>

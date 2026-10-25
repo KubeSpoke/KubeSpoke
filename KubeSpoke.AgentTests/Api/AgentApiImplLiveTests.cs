@@ -6,6 +6,7 @@ using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using KubeSpoke.Agent.Services;
 using KubeSpoke.Agent.Apis;
 using KubeSpoke.Contracts.Dtos;
 
@@ -35,7 +36,7 @@ namespace KubeSpoke.Agent.Api.Tests
             var provider = services.BuildServiceProvider();
             var log = provider.GetRequiredService<ILogger<AgentApiImpl>>();
 
-            impl = new AgentApiImpl(client, null, log);
+            impl = new AgentApiImpl(client, null, new HelmCli(provider.GetRequiredService<ILogger<HelmCli>>()), log);
             svcName = "ks-live-svc-" + Guid.NewGuid().ToString("N")[..8];
         }
 

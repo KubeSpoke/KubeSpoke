@@ -15,6 +15,7 @@ using System.Net;
 using KubeSpoke.Agent.Apis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using KubeSpoke.Agent.Services;
 
 namespace KubeSpoke.Agent.Api.Tests
 {
@@ -36,7 +37,7 @@ namespace KubeSpoke.Agent.Api.Tests
 
             var log = provider.GetRequiredService<ILogger<AgentApiImpl>>();
 
-            impl = new AgentApiImpl(client, null, log);
+            impl = new AgentApiImpl(client, null, new HelmCli(provider.GetRequiredService<ILogger<HelmCli>>()), log);
         }
 
         [TestMethod()]

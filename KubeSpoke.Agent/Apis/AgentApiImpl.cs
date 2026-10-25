@@ -22,6 +22,7 @@ using static KubeSpoke.Contracts.Models.Service;
 using static System.Net.Mime.MediaTypeNames;
 using KubeSpoke.Agent.Connecting;
 using KubeSpoke.Agent.Models;
+using KubeSpoke.Agent.Services;
 using Microsoft.Extensions.Logging;
 
 namespace KubeSpoke.Agent.Apis
@@ -32,10 +33,11 @@ namespace KubeSpoke.Agent.Apis
         IAlertor? alertor;
         ILogger<AgentApiImpl> logger;
 
-        public AgentApiImpl(Kubernetes clusterCtl, IAlertor? alertor, ILogger<AgentApiImpl> logger)
+        public AgentApiImpl(Kubernetes clusterCtl, IAlertor? alertor, HelmCli helm, ILogger<AgentApiImpl> logger)
         {
             this.client = clusterCtl;
             this.alertor = alertor;
+            this.helm = helm;
             this.logger = logger;
         }
 
@@ -824,11 +826,18 @@ namespace KubeSpoke.Agent.Apis
         public V1Deployment ReplaceImage(ReplaceImageRequest request)
         {
             var deploy = client.AppsV1.ReadNamespacedDeployment(request.Name, request.Namespace);
-            var oldVersion = deploy.Spec.Template.Spec.Containers.First().Image;
+            var containers = deploy.Spec.Template.Spec.Containers;
+            // 不指名就改第一个（历史行为）；指名了却没这个容器，宁可报错也不要动错容器
+            var target = string.IsNullOrEmpty(request.ContainerName)
+                ? containers.First()
+                : containers.FirstOrDefault(c => c.Name == request.ContainerName)
+                    ?? throw new Exception($"部署 {request.Namespace}/{request.Name} 里没有容器 {request.ContainerName}");
 
-            Alert(IAlertor.Level.Warning, "镜像版本变更", $"{request.Namespace}/{request.Name}: {oldVersion} -> {request.Image}");
+            var oldVersion = target.Image;
 
-            deploy.Spec.Template.Spec.Containers.First().Image = request.Image;
+            Alert(IAlertor.Level.Warning, "镜像版本变更", $"{request.Namespace}/{request.Name}/{target.Name}: {oldVersion} -> {request.Image}");
+
+            target.Image = request.Image;
             return client.AppsV1.ReplaceNamespacedDeployment(deploy, request.Name, request.Namespace);
         }
 
