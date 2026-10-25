@@ -12,7 +12,8 @@ KubeSpoke 是一套轻量的 Kubernetes 多集群管理控制台。管理端（S
 - **实时 Pod 日志**：日志流式推送
 - **容器终端**：网页里直接开 `kubectl exec` 的交互式 shell，随面板改变终端尺寸
 - **Pod 资源指标**：CPU / 内存实时查看
-- **常用运维操作**：替换镜像、调整副本数、创建/删除各类资源
+- **常用运维操作**：替换镜像（可直接从镜像仓库的 tag 列表里挑版本）、调整副本数、创建/删除各类资源
+- **Helm 应用**：注册 chart 仓库、浏览市场、安装前预览渲染结果，release 的升级/回滚/卸载与修订历史一目了然（helm 已内置在 Agent 镜像里）
 - **告警中心**：每分钟采集各集群的节点未就绪、容器起不来、副本不足与 Warning 事件，自动去重、恢复、可确认；新告警与恢复可按集群 POST 到自定义 webhook，支持按时长静默，每次推送留投递回执
 - **审计日志**：控制台里的写操作（含容器终端的开关）全部留痕，按集群与关键字检索
 - **系统设置**：控制台自身的运行参数集中一页，目前可调等 Agent 回执的超时秒数，改完即生效不用重启
@@ -24,7 +25,7 @@ KubeSpoke 是一套轻量的 Kubernetes 多集群管理控制台。管理端（S
 
 ```bash
 docker run -d --name kubespoke-server -p 8080:80 \
-  crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.4.0
+  crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.5.0
 ```
 
 也可以一行脚本部署到任意 Kubernetes 集群。脚本会先问暴露方式：NodePort（默认 30080），还是 nginx Ingress——选它就再问域名、要不要挂 TLS、证书走 cert-manager 自动签发还是已有 Secret，Service 自动变为 ClusterIP：
