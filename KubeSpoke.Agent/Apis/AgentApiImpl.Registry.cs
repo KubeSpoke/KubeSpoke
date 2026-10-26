@@ -86,8 +86,12 @@ namespace KubeSpoke.Agent.Apis
             }
             catch (Exception ex)
             {
+                // 这里把异常吞成 Notice 后正常返回，所以 SignalRConnection 的 RPC catch 永远不会触发，
+                // agent 日志里也就一条 error 都没有——列 tag 失败在 agent 侧彻底静默。补这条 warn 让它至少留痕。
                 res.Tags.Clear();
                 res.Notice = ex.Message;
+                logger.LogWarning(ex, "[ListImageTags] 列 {Registry}/{Repository} 的 tag 失败（凭证 {Credential}）",
+                    res.Registry, res.Repository, res.Credential);
             }
             return res;
         }
@@ -163,7 +167,17 @@ namespace KubeSpoke.Agent.Apis
             // token 一旦拿到就只用它：同时带两种 Authorization，有的网关会挑错的那个去校验
             if (bearer != null) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
             else if (basicAuth != null) req.Headers.TryAddWithoutValidation("Authorization", basicAuth);
-            return await RegistryHttp.SendAsync(req);
+            try
+            {
+                return await RegistryHttp.SendAsync(req);
+            }
+            catch (Exception ex)
+            {
+                // 超时/连不上时 HttpClient 只吐一句「Timeout of 10 seconds」，看不出卡在哪个域名。
+                // 这里把完整 URL 拼进去：tags/list 和 401 换 token 两条路都走这个方法，
+                // 光看 Notice 里那个 host 就能分清是连不到 registry 本身，还是连不到仓库认证域名。
+                throw new Exception($"连不上 {uri.Scheme}://{uri.Authority}（{ex.Message}）", ex);
+            }
         }
 
         /// <summary>
