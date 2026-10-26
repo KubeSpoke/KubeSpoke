@@ -6,6 +6,8 @@ name: Image CI
 #     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-agent:0.3.0
 #     ->  crpi-...personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.3.0
 #   两条路径都会同时刷新两个镜像的 :latest；不带版本号的手动触发只刷 :latest，用于验证流水线本身。
+#   手动触发时可用 image_scope 单独发 agent 或 server（例如只改了 agent，不必空跑 server 的还原+构建）；
+#   推标签（v*）发布不受此影响，始终两个镜像一起、同版本号。
 # 注意：对外交付物（deploy-server.sh 的默认 IMAGE、README 的 docker run）刻意钉在具体版本号上，
 #       发新版本时要一并改，别让它们停在旧版。
 # 前提：Secrets 里有 REGISTRY_PASSWORD（ACR 个人版「访问凭证」的固定密码），
@@ -15,6 +17,16 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      image_scope:
+        description: 单独发哪个镜像；推标签发布不受此项影响，始终两个一起
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - agent
+          - server
 
 concurrency:
   group: image-${{ github.ref }}
@@ -37,8 +49,11 @@ jobs:
         include:
           - dockerfile: Dockerfile-agent
             image_name: kubespoke-agent
+            # scope=server 时跳过 agent 这一路；tag 发布与非手动触发一律照旧两个都发
+            if: ${{ github.event_name != 'workflow_dispatch' || inputs.image_scope != 'server' }}
           - dockerfile: Dockerfile-api
             image_name: kubespoke-server
+            if: ${{ github.event_name != 'workflow_dispatch' || inputs.image_scope != 'agent' }}
     env:
       IMAGE_NAME: ${{ matrix.image_name }}
     steps:
