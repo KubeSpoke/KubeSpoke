@@ -25,7 +25,7 @@ KubeSpoke 是一套轻量的 Kubernetes 多集群管理控制台。管理端（S
 
 ```bash
 docker run -d --name kubespoke-server -p 8080:80 \
-  crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.5.1
+  crpi-gr7j2r1czfy1t1uu.cn-hangzhou.personal.cr.aliyuncs.com/springhgui/kubespoke-server:0.5.2
 ```
 
 也可以一行脚本部署到任意 Kubernetes 集群。脚本会先问暴露方式：NodePort（默认 30080），还是 nginx Ingress——选它就再问域名、要不要挂 TLS、证书走 cert-manager 自动签发还是已有 Secret，Service 自动变为 ClusterIP：
