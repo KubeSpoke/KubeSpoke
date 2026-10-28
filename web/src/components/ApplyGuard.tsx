@@ -98,16 +98,16 @@ export async function confirmApply(opts: {
     <div>
       {opts.intro ? <div style={{ marginBottom: 8 }}>{opts.intro}</div> : null}
       {stale && (
-        <div style={{ color: '#d94f4f', marginBottom: 8 }}>
+        <div style={{ color: 'var(--color-danger)', marginBottom: 8 }}>
           该对象在你打开页面之后已被他人修改，继续提交会覆盖对方的改动。
         </div>
       )}
       <div style={{ maxHeight: 320, overflow: 'auto' }}>
         {rows.map((r) => (
-          <div key={r.path} style={{ display: 'flex', gap: 8, fontSize: 12, lineHeight: '22px', borderBottom: '1px solid #f0f2f5' }}>
+          <div key={r.path} style={{ display: 'flex', gap: 8, fontSize: 12, lineHeight: '22px', paddingBlock: 4 }}>
             <span style={{ flex: '1 1 auto', minWidth: 140, wordBreak: 'break-all' }}>{r.path}</span>
-            <span style={{ flex: '0 0 auto', maxWidth: '38%', color: '#8f9aa9', textDecoration: 'line-through', wordBreak: 'break-all' }}>{r.from}</span>
-            <span style={{ flex: '0 0 auto', maxWidth: '38%', color: '#15233a', wordBreak: 'break-all' }}>{r.to}</span>
+            <span style={{ flex: '0 0 auto', maxWidth: '38%', color: 'var(--ks-muted)', textDecoration: 'line-through', wordBreak: 'break-all' }}>{r.from}</span>
+            <span style={{ flex: '0 0 auto', maxWidth: '38%', color: 'var(--ks-ink)', wordBreak: 'break-all' }}>{r.to}</span>
           </div>
         ))}
       </div>

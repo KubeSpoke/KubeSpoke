@@ -320,7 +320,7 @@ export default function InstallForm(props: Props) {
               {
                 key: 'yaml',
                 label: `helm template 输出（${yaml.split('\n').length} 行）`,
-                children: <pre className="kbd-mono m-0 max-h-72 overflow-auto rounded bg-slate-50 p-3 text-xs">{yaml}</pre>,
+                children: <pre className="kbd-mono m-0 max-h-72 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{yaml}</pre>,
               },
             ]}
           />

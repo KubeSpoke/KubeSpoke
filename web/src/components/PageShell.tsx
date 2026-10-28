@@ -23,6 +23,8 @@ interface Props {
   stats?: ReactNode
   /** 内容贴边（表格类页面用，对应 KubeSphere 的列表卡） */
   flush?: boolean
+  /** 卡面由外层容器提供（Tab 页里多个子页合成一张卡时用），自身只出内容并收紧留白 */
+  bare?: boolean
   children: ReactNode
 }
 
@@ -39,6 +41,7 @@ export function PageShell({
   error,
   stats,
   flush = false,
+  bare = false,
   children,
 }: Props) {
   const { namespace, namespaces, setNamespace } = useClusterStore()
@@ -64,16 +67,16 @@ export function PageShell({
         />
       )}
 
-      <div className="ks-card !overflow-hidden">
-        {/* 页面标题区：图标砖 + 标题 + 描述（KubeSphere 式描述条） */}
-        <div className="flex items-center gap-3 px-5 py-4">
+      <div className={bare ? '' : 'ks-panel'}>
+        {/* 页面标题区：图标砖 + 标题 + 描述（去线后靠 24px 留白与内容分区） */}
+        <div className={`flex items-center gap-3.5 px-6 ${bare ? 'pb-3 pt-4' : 'pb-4 pt-6'}`}>
           {icon && (
-            <span className="grid size-11 shrink-0 place-items-center rounded bg-[#f4f6fa] text-xl text-[#5c6b80]">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--ks-fill)] text-xl text-[var(--ks-body)]">
               {icon}
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <Typography.Title level={5} style={{ margin: 0, fontWeight: 700, color: '#15233a' }}>
+            <Typography.Title level={5} style={{ margin: 0, fontWeight: 700, color: 'var(--ks-ink)' }}>
               {title}
             </Typography.Title>
             {description && (
@@ -89,17 +92,14 @@ export function PageShell({
               value={namespace}
               onChange={setNamespace}
               placeholder="命名空间"
-              variant="borderless"
+              variant="filled"
               suffixIcon={null}
-              className="rounded bg-[#f4f6fa] px-1"
               options={namespaces.map((n) => ({ label: n.name, value: n.name }))}
             />
           )}
         </div>
 
-        {stats && <div className="border-t border-[#ebeef2] px-5 py-4">{stats}</div>}
-
-        {/* 工具条：左=搜索，右=操作 + 刷新 + 列设置 */}
+        {stats && <div className="px-6 pb-6 pt-1">{stats}</div>}        {/* 工具条：左=搜索，右=操作 + 刷新 + 列设置 */}
         {hasToolbar && (
           <Flex justify="space-between" align="center" gap={12} className="ks-toolbar">
             <div className="min-w-0 flex-1">{search}</div>
@@ -125,32 +125,32 @@ export function PageShell({
           </Flex>
         )}
 
-        <div className={flush ? '' : 'px-5 pb-5 pt-1'}>{children}</div>
+        <div className={flush ? 'pb-2' : bare ? 'px-6 pb-5' : 'px-6 pb-6'}>{children}</div>
       </div>
     </div>
   )
 }
 
 const TONES: Record<string, string> = {
-  Running: '#59c492',
-  Ready: '#59c492',
-  Active: '#59c492',
-  Bound: '#59c492',
-  Complete: '#59c492',
-  Completed: '#59c492',
-  Available: '#59c492',
-  Succeeded: '#59c492',
-  Healthy: '#59c492',
-  Pending: '#f5a623',
-  NotReady: '#f5a623',
-  Updating: '#f5a623',
-  Terminating: '#f5a623',
-  Unknown: '#9aa7b8',
-  Failed: '#d94f4f',
-  CrashLoopBackOff: '#d94f4f',
-  Error: '#d94f4f',
-  Unbound: '#d94f4f',
-  SchedulingDisabled: '#f5a623',
+  Running: 'var(--color-ok)',
+  Ready: 'var(--color-ok)',
+  Active: 'var(--color-ok)',
+  Bound: 'var(--color-ok)',
+  Complete: 'var(--color-ok)',
+  Completed: 'var(--color-ok)',
+  Available: 'var(--color-ok)',
+  Succeeded: 'var(--color-ok)',
+  Healthy: 'var(--color-ok)',
+  Pending: 'var(--color-warn)',
+  NotReady: 'var(--color-warn)',
+  Updating: 'var(--color-warn)',
+  Terminating: 'var(--color-warn)',
+  Unknown: 'var(--ks-muted)',
+  Failed: 'var(--color-danger)',
+  CrashLoopBackOff: 'var(--color-danger)',
+  Error: 'var(--color-danger)',
+  Unbound: 'var(--color-danger)',
+  SchedulingDisabled: 'var(--color-warn)',
 }
 
 export function StatusTag({ phase }: { phase?: string }) {
@@ -173,27 +173,27 @@ export function StatusTag({ phase }: { phase?: string }) {
 export function StatusDot({ phase, extra }: { phase?: string; extra?: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONES[phase ?? ''] ?? '#9aa7b8' }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{phase ?? '-'}</span>
-      {extra && <span className="text-[#8f9aa9]">{extra}</span>}
+      <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONES[phase ?? ''] ?? 'var(--ks-muted)' }} />
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{phase ?? '-'}</span>
+      {extra && <span className="text-[var(--ks-muted)]">{extra}</span>}
     </span>
   )
 }
 
-/** 图标砖 + 名称 + 次要信息（IP / 命名空间 / 版本）——KubeSphere 列表名称列 */
+/** 图标砖 + 名称 + 次要信息（IP / 命名空间 / 版本）——列表名称列 */
 export function NameCell({ icon, title, sub }: { icon?: ReactNode; title?: string; sub?: string }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       {icon && (
-        <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[#f4f6fa] text-base text-[#5c6b80]">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--ks-fill)] text-base text-[var(--ks-body)]">
           {icon}
         </span>
       )}
       <div className="min-w-0">
-        <div className="truncate font-medium" style={{ color: '#15233a' }} title={title}>
+        <div className="truncate font-medium" style={{ color: 'var(--ks-ink)' }} title={title}>
           {title ?? '-'}
         </div>
-        {sub && <div className="kbd-mono truncate text-xs text-[#8f9aa9]">{sub}</div>}
+        {sub && <div className="kbd-mono truncate text-xs text-[var(--ks-muted)]">{sub}</div>}
       </div>
     </div>
   )
@@ -203,8 +203,8 @@ export function NameCell({ icon, title, sub }: { icon?: ReactNode; title?: strin
 export function MetricCell({ value, sub }: { value: ReactNode; sub?: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="font-semibold" style={{ color: '#15233a' }}>{value}</div>
-      {sub && <div className="truncate text-xs text-[#8f9aa9]">{sub}</div>}
+      <div className="font-semibold" style={{ color: 'var(--ks-ink)' }}>{value}</div>
+      {sub && <div className="truncate text-xs text-[var(--ks-muted)]">{sub}</div>}
     </div>
   )
 }
@@ -215,10 +215,10 @@ export function StatStrip({ items }: { items: { icon?: ReactNode; value: ReactNo
     <div className="flex flex-wrap gap-x-14 gap-y-4">
       {items.map((it) => (
         <div key={it.label} className="flex items-center gap-2.5">
-          {it.icon && <span className="text-lg text-[#8f9aa9]">{it.icon}</span>}
+          {it.icon && <span className="text-lg text-[var(--ks-muted)]">{it.icon}</span>}
           <div>
-            <div className="text-xl font-semibold leading-none" style={{ color: '#15233a' }}>{it.value}</div>
-            <div className="mt-1 text-xs text-[#8f9aa9]">{it.label}</div>
+            <div className="text-xl font-semibold leading-none" style={{ color: 'var(--ks-ink)' }}>{it.value}</div>
+            <div className="mt-1 text-xs text-[var(--ks-muted)]">{it.label}</div>
           </div>
         </div>
       ))}

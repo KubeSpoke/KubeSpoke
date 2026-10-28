@@ -4,10 +4,10 @@ import { datetime } from '../../utils/format'
  * helm 的状态串是小写连字符形式（deployed / pending-install / failed …），
  * PageShell 的 StatusDot 认的是 K8s Phase，所以配色自己出一份。
  */
-const GREEN = '#59c492'
-const ORANGE = '#f5a623'
-const RED = '#d94f4f'
-const GREY = '#9aa7b8'
+const GREEN = 'var(--color-ok)'
+const ORANGE = 'var(--color-warn)'
+const RED = 'var(--color-danger)'
+const GREY = 'var(--ks-muted)'
 
 export const helmTone = (status?: string): string => {
   const s = (status ?? '').toLowerCase()

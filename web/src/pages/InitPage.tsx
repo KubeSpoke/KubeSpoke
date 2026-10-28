@@ -49,20 +49,17 @@ export default function InitPage() {
 
   return (
     <div
-      className="grid h-screen w-full place-items-center px-6"
-      style={{
-        background:
-          'radial-gradient(1200px 700px at 12% 8%, #eaf2ff 0%, rgba(234,242,255,0) 55%), radial-gradient(900px 600px at 88% 90%, #e8f8f1 0%, rgba(232,248,241,0) 50%), linear-gradient(160deg, #f7fafd 0%, #eef4fb 100%)',
-      }}
+      className="ks-auth-bg grid h-screen w-full place-items-center px-6"
+
     >
-      <div className="w-full max-w-[400px] rounded-2xl bg-white px-8 py-8" style={{ boxShadow: '0 18px 50px rgba(29,43,69,0.10)' }}>
+      <div className="w-full max-w-[400px] ks-auth-card rounded-2xl px-8 py-8">
         <div className="mb-5 flex items-center gap-3">
           <BrandMark size={40} />
           <div>
-            <Typography.Text className="!text-[18px] !font-bold" style={{ color: '#1d2b45' }}>
+            <Typography.Text className="!text-[18px] !font-bold" style={{ color: 'var(--ks-ink)' }}>
               KubeSpoke
             </Typography.Text>
-            <div className="text-xs" style={{ color: '#7b8ba3' }}>
+            <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>
               首次安装，请设置管理员口令
             </div>
           </div>

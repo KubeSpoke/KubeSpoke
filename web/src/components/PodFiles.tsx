@@ -14,7 +14,6 @@ import {
 } from '@ant-design/icons'
 import { clusterApi } from '../api/cluster'
 import type { PodFileEntry } from '../api/cluster'
-import { palette } from '../theme/ksTheme'
 import { datetime, memory } from '../utils/format'
 
 interface Props {
@@ -280,10 +279,10 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
   }
 
   const iconFor = (r: Row): ReactNode => {
-    if (r.up) return <ArrowUpOutlined style={{ color: palette.textMuted }} />
-    if (r.type === 'dir') return <FolderOutlined style={{ color: palette.brand }} />
-    if (r.type === 'link') return <LinkOutlined style={{ color: palette.warning }} />
-    return <FileOutlined style={{ color: palette.textMuted }} />
+    if (r.up) return <ArrowUpOutlined style={{ color: 'var(--ks-muted)' }} />
+    if (r.type === 'dir') return <FolderOutlined style={{ color: 'var(--color-brand)' }} />
+    if (r.type === 'link') return <LinkOutlined style={{ color: 'var(--color-warn)' }} />
+    return <FileOutlined style={{ color: 'var(--ks-muted)' }} />
   }
 
   const rows: Row[] = []
@@ -299,10 +298,10 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
     acc += `/${seg}`
     const at = acc
     crumbs.push({
-      title: i === segs.length - 1 ? <span style={{ color: palette.text }}>{seg}</span> : <a onClick={() => go(at)}>{seg}</a>,
+      title: i === segs.length - 1 ? <span style={{ color: 'var(--ks-ink)' }}>{seg}</span> : <a onClick={() => go(at)}>{seg}</a>,
     })
   })
-  const crumbItems = [{ title: segs.length ? <a onClick={() => go('/')}>根目录</a> : <span style={{ color: palette.text }}>根目录</span> }, ...crumbs]
+  const crumbItems = [{ title: segs.length ? <a onClick={() => go('/')}>根目录</a> : <span style={{ color: 'var(--ks-ink)' }}>根目录</span> }, ...crumbs]
 
   const showUpload = queue.length > 0
 
@@ -393,10 +392,10 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
               render: (_, r) => (
                 <span className="inline-flex items-center gap-2">
                   {iconFor(r)}
-                  <span className="kbd-mono" style={{ color: r.up ? palette.textMuted : palette.textBody }}>
+                  <span className="kbd-mono" style={{ color: r.up ? 'var(--ks-muted)' : 'var(--ks-body)' }}>
                     {r.name}
                   </span>
-                  {r.type === 'link' && r.link ? <span className="text-xs" style={{ color: palette.textMuted }}>→ {r.link}</span> : null}
+                  {r.type === 'link' && r.link ? <span className="text-xs" style={{ color: 'var(--ks-muted)' }}>→ {r.link}</span> : null}
                 </span>
               ),
             },
@@ -425,7 +424,7 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
       )}
 
       {showUpload && (
-        <div className="mt-3 rounded border border-[var(--color-line)] p-2">
+        <div className="mt-3 rounded-xl bg-[var(--ks-fill-soft)] p-3">
           <div className="mb-1 flex items-center justify-between">
             <Typography.Text type="secondary" className="!text-xs">
               上传队列
@@ -452,12 +451,12 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
                 status={it.status === 'error' ? 'exception' : 'normal'}
               />
               {it.status === 'error' && it.error ? (
-                <div className="text-xs" style={{ color: palette.danger }}>
+                <div className="text-xs" style={{ color: 'var(--color-danger)' }}>
                   {it.error}
                 </div>
               ) : null}
               {it.status === 'canceled' ? (
-                <div className="text-xs" style={{ color: palette.textMuted }}>
+                <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>
                   已取消
                 </div>
               ) : null}
@@ -469,9 +468,9 @@ export function PodFiles({ cluster, namespace, pod, container, running }: Props)
       {dragging ? (
         <div
           className="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded border-2 border-dashed"
-          style={{ borderColor: palette.brand, background: palette.brandBg }}
+          style={{ borderColor: 'var(--color-brand)', background: 'var(--ks-brand-bg)' }}
         >
-          <Typography.Text style={{ color: palette.brand }}>松开以上传到 {path}</Typography.Text>
+          <Typography.Text style={{ color: 'var(--color-brand)' }}>松开以上传到 {path}</Typography.Text>
         </div>
       ) : null}
 

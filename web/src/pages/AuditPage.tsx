@@ -85,7 +85,7 @@ export default function AuditPage() {
                 失败
               </Tag>
               {r.message && (
-                <span className="block truncate text-xs text-[#8f9aa9]" style={{ maxWidth: 120 }}>
+                <span className="block truncate text-xs text-[var(--ks-muted)]" style={{ maxWidth: 120 }}>
                   {r.message}
                 </span>
               )}

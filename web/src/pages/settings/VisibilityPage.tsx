@@ -39,26 +39,26 @@ interface ProjectRow {
 }
 
 /** 视觉 token：与节点管理页同一套语言 */
-const BANNER_BG = 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)'
-const ICON_BRICK = 'linear-gradient(135deg, #5ea0ff, #1668dc)'
-const TONE = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const BANNER_BG = 'var(--ks-surface)'
+const ICON_BRICK = 'var(--ks-brand-bg)'
+const TONE = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 /** 白色圆角卡片分区：标题 + 可选说明 + 右侧操作 + 内容（对齐节点管理页 Panel） */
 function Panel({ title, description, extra, children }: { title: string; description?: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between gap-3 px-4" style={{ minHeight: 48, borderBottom: '1px solid #eef1f5' }}>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
         <div className="min-w-0">
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
           {description && (
-            <span className="ml-2 text-xs" style={{ color: '#8f9aa9' }}>
+            <span className="ml-2 text-xs" style={{ color: 'var(--ks-muted)' }}>
               {description}
             </span>
           )}
         </div>
         {extra && <div className="shrink-0">{extra}</div>}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -163,28 +163,28 @@ export default function VisibilityPage() {
   }
 
   const tone = limited ? TONE.warn : TONE.ok
-  const toneText = limited ? '#c47f0a' : '#27a06a'
+  const toneText = limited ? 'var(--ks-warn-text)' : 'var(--ks-ok-text)'
 
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
           {error} <Button size="small" onClick={refresh}>重试</Button>
         </div>
       )}
 
       {/* 页头横幅 */}
       <div
-        className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
+        className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
         style={{ background: BANNER_BG }}
       >
         <div className="flex items-center gap-4">
-          <span className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white" style={{ background: ICON_BRICK }}>
+          <span className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white" style={{ background: ICON_BRICK, color: "var(--color-brand)" }}>
             <GlobalOutlined />
           </span>
           <div>
-            <div className="text-xl font-bold" style={{ color: '#15233a' }}>集群可见性</div>
-            <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+            <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>集群可见性</div>
+            <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
               可见性写在 kube-system 命名空间的注解上，决定哪些项目能在本集群中被访问。
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function VisibilityPage() {
             <span className="size-[7px] rounded-full" style={{ background: tone }} />
             {limited ? '对部分项目可见' : '公有'}
           </span>
-          <span className="text-xs" style={{ color: '#8f9aa9' }}>
+          <span className="text-xs" style={{ color: 'var(--ks-muted)' }}>
             {limited ? (
               data?.projects?.length ? (
                 <span className="kbd-mono">可见项目：{data.projects.join('、')}</span>
@@ -225,9 +225,9 @@ export default function VisibilityPage() {
       </Panel>
 
       {/* 可见项目列表 */}
-      <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4" style={{ minHeight: 48, borderBottom: '1px solid #eef1f5' }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>可见项目</span>
+      <div className="ks-panel">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>可见项目</span>
           <Input.Search
             className="ks-search"
             placeholder="输入名称进行过滤"
@@ -265,7 +265,7 @@ export default function VisibilityPage() {
         onCancel={() => setOpen(false)}
         onOk={doSave}
       >
-        <Form form={form} layout="vertical" size="small" className="mt-3">
+        <Form form={form} layout="vertical" className="mt-3">
           <Form.Item name="visibility" label="可见性">
             <Radio.Group
               options={[

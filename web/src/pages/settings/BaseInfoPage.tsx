@@ -41,25 +41,25 @@ const NODES: ResourceDescriptor = {
 }
 
 /** 视觉 token：与节点管理页同一套语言 */
-const BANNER_BG = 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)'
-const ICON_BRICK = 'linear-gradient(135deg, #5ea0ff, #1668dc)'
+const BANNER_BG = 'var(--ks-surface)'
+const ICON_BRICK = 'var(--ks-brand-bg)'
 
 /** 白色圆角卡片分区：标题 + 可选说明 + 右侧操作 + 内容（对齐节点管理页 Panel） */
 function Panel({ title, description, extra, children }: { title: string; description?: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between gap-3 px-4" style={{ minHeight: 48, borderBottom: '1px solid #eef1f5' }}>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
         <div className="min-w-0">
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
           {description && (
-            <span className="ml-2 text-xs" style={{ color: '#8f9aa9' }}>
+            <span className="ml-2 text-xs" style={{ color: 'var(--ks-muted)' }}>
               {description}
             </span>
           )}
         </div>
         {extra && <div className="shrink-0">{extra}</div>}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -158,7 +158,7 @@ export function ClusterBaseInfo({ cluster, onChanged }: { cluster: string; onCha
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
           {error} <Button size="small" onClick={refresh}>重试</Button>
         </div>
       )}
@@ -181,10 +181,10 @@ export function ClusterBaseInfo({ cluster, onChanged }: { cluster: string; onCha
                 label: '名称',
                 children: (
                   <div className="min-w-0">
-                    <div className="truncate font-semibold" style={{ color: '#15233a' }} title={cluster}>
+                    <div className="truncate font-semibold" style={{ color: 'var(--ks-ink)' }} title={cluster}>
                       {cluster}
                     </div>
-                    <div className="kbd-mono truncate text-xs" style={{ color: '#8f9aa9' }}>{data?.alias || '-'}</div>
+                    <div className="kbd-mono truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{data?.alias || '-'}</div>
                   </div>
                 ),
               },
@@ -209,7 +209,7 @@ export function ClusterBaseInfo({ cluster, onChanged }: { cluster: string; onCha
         onCancel={() => setOpen(false)}
         onOk={doSave}
       >
-        <Form form={form} layout="vertical" size="small" className="mt-3">
+        <Form form={form} layout="vertical" className="mt-3">
           <Form.Item name="alias" label="别名" extra="用于在集群列表中辨识，留空则不显示。">
             <Input maxLength={63} placeholder="请输入集群别名" allowClear />
           </Form.Item>
@@ -233,16 +233,16 @@ export default function BaseInfoPage() {
     <div className="space-y-4">
       {/* 页头横幅 */}
       <div
-        className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
+        className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
         style={{ background: BANNER_BG }}
       >
         <div className="flex items-center gap-4">
-          <span className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white" style={{ background: ICON_BRICK }}>
+          <span className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white" style={{ background: ICON_BRICK, color: "var(--color-brand)" }}>
             <ClusterOutlined />
           </span>
           <div>
-            <div className="text-xl font-bold" style={{ color: '#15233a' }}>基本信息</div>
-            <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+            <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>基本信息</div>
+            <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
               查看集群名称、供应商与 Kubernetes 版本，别名和描述保存在 kube-system 命名空间的注解上。
             </div>
           </div>

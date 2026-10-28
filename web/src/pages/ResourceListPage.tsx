@@ -29,9 +29,10 @@ import CreateIngressModal from './network/CreateIngressModal'
 import CreatePvcModal from './storage/CreatePvcModal'
 import { CreateSecretModal } from './config/CreateSecretModal'
 import { CreateConfigMapModal } from './config/CreateConfigMapModal'
+import { StatCard } from '../components/StatCard'
 
-/** 设计 token：品牌 #2f6fed，状态色 ok/warn/danger/muted（与节点管理页同源） */
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+/** 设计 token：品牌 var(--color-brand)，状态色 ok/warn/danger/muted（与节点管理页同源） */
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 
 const ALIAS_KEY = 'kubesphere.io/alias-name'
@@ -107,9 +108,9 @@ function describeResource(d: ResourceDescriptor): string {
 function StatusPill({ text, tone, extra }: { text: string; tone: Tone; extra?: string }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[tone] ?? '#9aa7b8' }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{text}</span>
-      {extra && <span className="text-[#8f9aa9]">{extra}</span>}
+      <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[tone] ?? 'var(--ks-muted)' }} />
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{text}</span>
+      {extra && <span className="text-[var(--ks-muted)]">{extra}</span>}
     </span>
   )
 }
@@ -355,12 +356,12 @@ function yamlTemplate(d: ResourceDescriptor): string {
 
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -368,35 +369,8 @@ function Panel({ title, extra, children }: { title: string; extra?: ReactNode; c
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, pct, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; pct: string; color: string; bg: string; icon: ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>{pct}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -596,7 +570,7 @@ export default function ResourceListPage() {
     <div className="min-w-0">
       <a
         className="block truncate font-medium"
-        style={{ color: '#2f6fed' }}
+        style={{ color: 'var(--color-brand)' }}
         title={nameOf(o)}
         onClick={(e) => {
           e.stopPropagation()
@@ -605,7 +579,7 @@ export default function ResourceListPage() {
       >
         {main}
       </a>
-      <div className="kbd-mono truncate text-xs text-[#8f9aa9]">{sub ?? '-'}</div>
+      <div className="kbd-mono truncate text-xs text-[var(--ks-muted)]">{sub ?? '-'}</div>
     </div>
   )
 
@@ -872,7 +846,7 @@ export default function ResourceListPage() {
               return (
                 <div className="min-w-0">
                   <div className="truncate">{node}</div>
-                  {ip && <div className="kbd-mono truncate text-xs text-[#8f9aa9]">{ip}</div>}
+                  {ip && <div className="kbd-mono truncate text-xs text-[var(--ks-muted)]">{ip}</div>}
                 </div>
               )
             },
@@ -1063,26 +1037,26 @@ export default function ResourceListPage() {
         {/* 左：主区 */}
         <div className="min-w-0 flex-1 space-y-4">
           {shownError && (
-            <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
               {shownError} <Button size="small" onClick={reload}>重试</Button>
             </div>
           )}
 
           {/* 页头横幅 */}
           <div
-            className="relative flex items-center justify-between gap-4 overflow-hidden rounded-lg px-6 py-5"
-            style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+            className="ks-panel relative flex items-center justify-between gap-4 overflow-hidden px-6 py-5"
+
           >
             <div className="flex min-w-0 items-center gap-4">
               <span
                 className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-                style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+                style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
               >
                 {d.icon ?? <AppstoreOutlined />}
               </span>
               <div className="min-w-0">
-                <div className="text-xl font-bold" style={{ color: '#15233a' }}>{d.label}</div>
-                <div className="mt-1 truncate text-[13px]" style={{ color: '#6b7a92' }} title={describeResource(d)}>
+                <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>{d.label}</div>
+                <div className="mt-1 truncate text-[13px]" style={{ color: 'var(--ks-muted)' }} title={describeResource(d)}>
                   {describeResource(d)} · 当前集群：{cluster || '未选择'} · 跨全部项目展示
                 </div>
               </div>
@@ -1105,27 +1079,27 @@ export default function ResourceListPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard
               label={`${d.label}总数`} value={items.length} total={items.length} pct={items.length ? '100%' : '0%'}
-              color="#2f6fed" bg="#e8f1ff" icon={d.icon ?? <AppstoreOutlined />}
+              color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={d.icon ?? <AppstoreOutlined />}
               active={!statusFilter} onClick={() => setStatusFilter(undefined)}
             />
             <StatCard
               label="正常" value={counts.ok} total={items.length} pct={pct(counts.ok)}
-              color="#27a06a" bg="#e6f7ef" icon={<CheckCircleOutlined />}
+              color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<CheckCircleOutlined />}
               active={statusFilter === 'ok'} onClick={() => setStatusFilter(statusFilter === 'ok' ? undefined : 'ok')}
             />
             <StatCard
               label="异常" value={counts.danger} total={items.length} pct={pct(counts.danger)}
-              color="#d94f4f" bg="#fdecec" icon={<ExclamationCircleOutlined />}
+              color="var(--color-danger)" bg="var(--ks-danger-bg)" icon={<ExclamationCircleOutlined />}
               active={statusFilter === 'danger'} onClick={() => setStatusFilter(statusFilter === 'danger' ? undefined : 'danger')}
             />
           </div>
 
           {/* 工具栏 + 表格卡片 */}
-          <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+          <div className="ks-panel">
             <div className="flex flex-wrap items-center gap-3 px-4 py-3">
               {d.scope === 'Namespaced' && (
                 <>
-                  <span className="text-[13px]" style={{ color: '#8f9aa9' }}>项目</span>
+                  <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>项目</span>
                   <Select
                     allowClear
                     placeholder="全部"
@@ -1140,7 +1114,7 @@ export default function ResourceListPage() {
               )}
               {hasStatusCol && (
                 <>
-                  <span className="text-[13px]" style={{ color: '#8f9aa9' }}>状态</span>
+                  <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>状态</span>
                   <Select
                     allowClear
                     placeholder="全部"
@@ -1205,17 +1179,17 @@ export default function ResourceListPage() {
         <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
           {active && aStatus ? (
             <>
-              <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-                <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+              <div className="ks-panel">
+                <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                     {d.icon ?? <AppstoreOutlined />}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-base font-bold" title={nameOf(active)} style={{ color: '#15233a' }}>
+                  <span className="min-w-0 flex-1 truncate text-base font-bold" title={nameOf(active)} style={{ color: 'var(--ks-ink)' }}>
                     {nameOf(active)}
                   </span>
                   <span
                     className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
-                    style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? '#27a06a' : TONE_COLOR[aStatus.tone] === '#9aa7b8' ? '#5b6a80' : TONE_COLOR[aStatus.tone] }}
+                    style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? 'var(--ks-ok-text)' : TONE_COLOR[aStatus.tone] === 'var(--ks-muted)' ? 'var(--ks-body)' : TONE_COLOR[aStatus.tone] }}
                   >
                     <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR[aStatus.tone] }} />
                     {aStatus.text}
@@ -1237,7 +1211,7 @@ export default function ResourceListPage() {
                 title="YAML 摘要"
                 extra={<a style={{ fontSize: 12 }} onClick={() => openDetail(active)}>查看详情 <RightOutlined style={{ fontSize: 10 }} /></a>}
               >
-                <pre className="kbd-mono m-0 max-h-[240px] overflow-auto rounded-md bg-slate-50 p-3 text-xs">
+                <pre className="kbd-mono m-0 max-h-[240px] overflow-auto rounded-md bg-[var(--ks-fill-soft)] p-3 text-xs">
                   {aYamlHead}
                 </pre>
               </Panel>
@@ -1247,22 +1221,22 @@ export default function ResourceListPage() {
                   <div className="space-y-1.5">
                     {aLabels.slice(0, 8).map(([k, v]) => (
                       <div key={k} className="text-[13px]">
-                        <div className="truncate font-medium" title={k} style={{ color: '#15233a' }}>{k}</div>
-                        <div className="kbd-mono truncate text-xs" title={v} style={{ color: '#8f9aa9' }}>{v}</div>
+                        <div className="truncate font-medium" title={k} style={{ color: 'var(--ks-ink)' }}>{k}</div>
+                        <div className="kbd-mono truncate text-xs" title={v} style={{ color: 'var(--ks-muted)' }}>{v}</div>
                       </div>
                     ))}
                     {aLabels.length > 8 && (
-                      <div className="text-xs" style={{ color: '#8f9aa9' }}>其余 {aLabels.length - 8} 个标签请查看详情</div>
+                      <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>其余 {aLabels.length - 8} 个标签请查看详情</div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-[13px]" style={{ color: '#8f9aa9' }}>无标签</div>
+                  <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>无标签</div>
                 )}
               </Panel>
             </>
           ) : (
             <Panel title="使用小贴士">
-              <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+              <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
                 点击表格行即可在右侧查看该{d.label}的状态、YAML 摘要与关键标签；点击名称在右侧抽屉中查看完整详情，可直接编辑 YAML 或删除。
               </div>
             </Panel>

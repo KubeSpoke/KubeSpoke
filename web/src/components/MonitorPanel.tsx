@@ -67,7 +67,7 @@ export function MonitorPanel({ cluster, kind, name, capacity }: { cluster: strin
         cur={cur.mem(latest?.mem)}
         cap={capacity ? `总量 ${memory(capacity.mem)}` : undefined}
         values={samples.map((s) => s.mem)}
-        color="#3ca96a"
+        color="var(--ks-ok-text)"
       />
       {samples.length === 0 && (
         <Typography.Text type="secondary" className="col-span-full !text-xs">
@@ -91,14 +91,14 @@ function Gauge({ title, unit, cur, cap, values, color }: { title: string; unit: 
   const area = values.length ? `0,${h} ${line} ${w},${h}` : ''
 
   return (
-    <div className="rounded-lg border border-slate-100 p-4">
+    <div className="rounded-xl bg-[var(--ks-fill-soft)] p-4">
       <div className="flex items-baseline justify-between">
-        <span className="text-[13px] text-slate-500">{title}</span>
-        {cap && <span className="text-xs text-slate-400">{cap}</span>}
+        <span className="text-[13px] text-[var(--ks-muted)]">{title}</span>
+        {cap && <span className="text-xs text-[var(--ks-faint)]">{cap}</span>}
       </div>
-      <div className="mt-1 text-xl font-semibold text-slate-800">
+      <div className="mt-1 text-xl font-semibold text-[var(--ks-ink)]">
         {cur}
-        {unit ? <span className="ml-1 text-xs font-normal text-slate-400">{unit}</span> : null}
+        {unit ? <span className="ml-1 text-xs font-normal text-[var(--ks-faint)]">{unit}</span> : null}
       </div>
       <svg viewBox={`0 0 ${w} ${h}`} className="mt-2 h-[70px] w-full" preserveAspectRatio="none">
         {values.length > 1 && (

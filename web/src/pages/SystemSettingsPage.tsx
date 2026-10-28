@@ -42,7 +42,7 @@ export default function SystemSettingsPage() {
       error={error}
     >
       <div className="max-w-[640px] py-3">
-        <Typography.Title level={5} style={{ margin: 0, color: '#15233a' }}>
+        <Typography.Title level={5} style={{ margin: 0, color: 'var(--ks-ink)' }}>
           Agent 响应超时
         </Typography.Title>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -57,13 +57,13 @@ export default function SystemSettingsPage() {
             precision={0}
             value={draft ?? saved}
             onChange={(v) => setDraft(typeof v === 'number' ? v : null)}
-            style={{ width: 120 }}
+            addonAfter="秒"
+            style={{ width: 150 }}
           />
-          <span className="text-xs text-[#5c6b80]">秒</span>
           <Button type="primary" disabled={!dirty} loading={saving} onClick={save}>
             保存
           </Button>
-          {dirty && <span className="text-xs text-[#8f9aa9]">当前生效 {saved} 秒</span>}
+          {dirty && <span className="text-xs text-[var(--ks-muted)]">当前生效 {saved} 秒</span>}
         </div>
 
         {!!data?.overrides.length && (

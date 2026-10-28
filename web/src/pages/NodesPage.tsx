@@ -24,6 +24,7 @@ import { bytes, cpuCores, datetime, percent } from '../utils/format'
 import { toYaml } from '../utils/yaml'
 import type { ResourceDescriptor } from '../config/nav'
 import type { Metrics, V1Event, V1Node } from '../types/k8s'
+import { StatCard } from '../components/StatCard'
 
 /**
  * 集群节点的通用描述符：列表/详情读取沿用 clusterApi.nodes（后端有类型化接口，字段完整），
@@ -58,9 +59,9 @@ export const nodeStatusText = (n: V1Node): string => {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  运行中: '#59c492',
-  不就绪: '#f5a623',
-  已停止: '#f5a623',
+  运行中: 'var(--color-ok)',
+  不就绪: 'var(--color-warn)',
+  已停止: 'var(--color-warn)',
 }
 
 /** StatusDot 的中文版本（StatusDot 的配色表按英文 phase 索引，这里显式给中文态配色） */
@@ -68,8 +69,8 @@ export function NodeStatusDot({ node }: { node: V1Node }) {
   const text = nodeStatusText(node)
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span className="size-[7px] shrink-0 rounded-full" style={{ background: STATUS_COLOR[text] ?? '#9aa7b8' }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{text}</span>
+      <span className="size-[7px] shrink-0 rounded-full" style={{ background: STATUS_COLOR[text] ?? 'var(--ks-muted)' }} />
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{text}</span>
     </span>
   )
 }
@@ -231,7 +232,7 @@ export function NodeActions({ node, onChanged, onDeleted, trigger }: NodeActions
     <>
       <Dropdown menu={{ items, onClick: onMenuClick }} trigger={['click']} placement="bottomRight" disabled={busy}>
         {trigger ?? (
-          <Button size="small" type="text" className="!px-2 !text-[#5c6b80]">
+          <Button size="small" type="text" className="!px-2 !text-[var(--ks-body)]">
             更多 <DownOutlined style={{ fontSize: 10 }} />
           </Button>
         )}
@@ -250,7 +251,7 @@ export function NodeActions({ node, onChanged, onDeleted, trigger }: NodeActions
         <div className="space-y-4 py-2">
           <div>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>名称</Typography.Text>
-            <div className="mt-1 font-medium" style={{ color: '#15233a' }}>{name}</div>
+            <div className="mt-1 font-medium" style={{ color: 'var(--ks-ink)' }}>{name}</div>
           </div>
           <div>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>别名</Typography.Text>
@@ -285,7 +286,7 @@ export function NodeActions({ node, onChanged, onDeleted, trigger }: NodeActions
           </Button>
         }
       >
-        <pre className="kbd-mono m-0 max-h-[56vh] overflow-auto rounded-md bg-slate-50 p-3 text-xs">
+        <pre className="kbd-mono m-0 max-h-[56vh] overflow-auto rounded-md bg-[var(--ks-fill-soft)] p-3 text-xs">
           {yamlText ?? ''}
         </pre>
       </Modal>
@@ -295,7 +296,7 @@ export function NodeActions({ node, onChanged, onDeleted, trigger }: NodeActions
 
 // ---------------------------------------------------------------- 节点管理（合并版页面）
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 /** 设计稿口径的状态文案：不可调度=维护中，不就绪=异常 */
 function nodeUiStatus(n: V1Node): { text: string; tone: 'ok' | 'warn' | 'danger' } {
@@ -326,12 +327,12 @@ function usageOf(m: Metrics | undefined, key: 'cpu' | 'memory'): number | null {
 /** 右侧竖排面板（与工作负载/服务页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -344,7 +345,7 @@ function Ring({ pct, color }: { pct: number | null; color: string }) {
       percent={pct ?? 0}
       strokeColor={color}
       strokeWidth={10}
-      format={() => (pct === null ? <span style={{ fontSize: 11, color: '#b3bdcc' }}>无数据</span> : <span style={{ fontSize: 14, fontWeight: 600 }}>{pct}%</span>)}
+      format={() => (pct === null ? <span style={{ fontSize: 11, color: 'var(--ks-faint)' }}>无数据</span> : <span style={{ fontSize: 14, fontWeight: 600 }}>{pct}%</span>)}
     />
   )
 }
@@ -352,35 +353,8 @@ function Ring({ pct, color }: { pct: number | null; color: string }) {
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, pct, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; pct: string; color: string; bg: string; icon: ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>{pct}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -520,7 +494,7 @@ export default function NodesPage() {
 
   if (!nodes.length && !loading) {
     return (
-      <div className="rounded-lg bg-white p-10 text-center" style={{ border: '1px solid #e6ebf1', color: '#8f9aa9' }}>
+      <div className="ks-panel p-10 text-center" style={{ color: 'var(--ks-muted)' }}>
         当前集群没有可读取的节点。
         <Button size="small" className="ml-3" onClick={refresh} loading={loading}>刷新</Button>
       </div>
@@ -536,12 +510,12 @@ export default function NodesPage() {
   const aStatus = active ? nodeUiStatus(active) : null
 
   const usageBar = (used: number | null, total: number, color: string) => {
-    if (used === null || !total) return <span className="text-xs" style={{ color: '#b3bdcc' }}>-</span>
+    if (used === null || !total) return <span className="text-xs" style={{ color: 'var(--ks-faint)' }}>-</span>
     const pct = percent(used, total)
     return (
       <div className="min-w-[90px]">
-        <div className="text-xs" style={{ color: '#15233a' }}>{pct}%</div>
-        <div className="mt-1 h-1 rounded-full bg-[#eef1f5]">
+        <div className="text-xs" style={{ color: 'var(--ks-ink)' }}>{pct}%</div>
+        <div className="mt-1 h-1 rounded-full bg-[var(--ks-fill)]">
           <div className="h-1 rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: color }} />
         </div>
       </div>
@@ -553,26 +527,26 @@ export default function NodesPage() {
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅 */}
         <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <CloudServerOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>节点管理</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>节点管理</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 查看和管理集群中的节点，监控节点状态、资源使用情况及运行的 Pod。
               </div>
             </div>
@@ -589,37 +563,37 @@ export default function NodesPage() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             label="节点总数" value={nodes.length} total={nodes.length} pct="100%"
-            color="#2f6fed" bg="#e8f1ff" icon={<CloudServerOutlined />}
+            color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<CloudServerOutlined />}
             active={!filterStatus} onClick={() => setFilterStatus(undefined)}
           />
           <StatCard
             label="运行中" value={counts.ok} total={nodes.length} pct={nodes.length ? `${Math.round((counts.ok / nodes.length) * 100)}%` : '0%'}
-            color="#27a06a" bg="#e6f7ef" icon={<CloudServerOutlined />}
+            color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<CloudServerOutlined />}
             active={filterStatus === 'ok'} onClick={() => setFilterStatus(filterStatus === 'ok' ? undefined : 'ok')}
           />
           <StatCard
             label="异常" value={counts.danger} total={nodes.length} pct={nodes.length ? `${Math.round((counts.danger / nodes.length) * 100)}%` : '0%'}
-            color="#d94f4f" bg="#fdecec" icon={<ExclamationCircleOutlined />}
+            color="var(--color-danger)" bg="var(--ks-danger-bg)" icon={<ExclamationCircleOutlined />}
             active={filterStatus === 'danger'} onClick={() => setFilterStatus(filterStatus === 'danger' ? undefined : 'danger')}
           />
           <StatCard
             label="维护中" value={counts.warn} total={nodes.length} pct={nodes.length ? `${Math.round((counts.warn / nodes.length) * 100)}%` : '0%'}
-            color="#7c5cff" bg="#f0ebff" icon={<PauseCircleOutlined />}
+            color="var(--ks-violet)" bg="var(--ks-violet-bg)" icon={<PauseCircleOutlined />}
             active={filterStatus === 'warn'} onClick={() => setFilterStatus(filterStatus === 'warn' ? undefined : 'warn')}
           />
         </div>
 
         {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
               添加节点
             </Button>
             {selected.length > 0 && <Button danger onClick={batchDelete}>批量删除（{selected.length}）</Button>}
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>节点状态</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>节点状态</span>
             <Select allowClear placeholder="全部" style={{ width: 100 }} value={filterStatus} onChange={setFilterStatus} suffixIcon={null} variant="filled"
               options={[{ label: '运行中', value: 'ok' }, { label: '异常', value: 'danger' }, { label: '维护中', value: 'warn' }]} />
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>角色</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>角色</span>
             <Select allowClear placeholder="全部" style={{ width: 130 }} value={filterRole} onChange={setFilterRole} suffixIcon={null} variant="filled"
               options={[{ label: 'control-plane', value: 'control-plane' }, { label: 'worker', value: 'worker' }]} />
             <span className="ml-auto flex items-center gap-2">
@@ -652,14 +626,14 @@ export default function NodesPage() {
                   const alias = (n.metadata?.annotations ?? {})[ALIAS_ANNOTATION] ?? ''
                   return (
                     <div className="flex items-center gap-3">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: '#e8f1ff', color: '#2f6fed' }}>
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: 'var(--ks-brand-bg)', color: 'var(--color-brand)' }}>
                         <CloudServerOutlined />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <a className="block truncate font-medium" style={{ color: '#15233a' }} onClick={() => setDetailNode(n.metadata?.name)}>
+                        <a className="block truncate font-medium" style={{ color: 'var(--ks-ink)' }} onClick={() => setDetailNode(n.metadata?.name)}>
                           {n.metadata?.name}
                         </a>
-                        <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{alias || n.status?.nodeInfo?.architecture || '-'}</div>
+                        <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{alias || n.status?.nodeInfo?.architecture || '-'}</div>
                       </div>
                     </div>
                   )
@@ -672,7 +646,7 @@ export default function NodesPage() {
                 width: 100,
                 render: (_, n) => {
                   const r = nodeRoleShort(n)
-                  const s = r === 'control-plane' ? { color: '#2f6fed', bg: '#e8f1ff' } : { color: '#5b6a80', bg: '#eef1f5' }
+                  const s = r === 'control-plane' ? { color: 'var(--color-brand)', bg: 'var(--ks-brand-bg)' } : { color: 'var(--ks-body)', bg: 'var(--ks-fill)' }
                   return <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: s.bg, color: s.color }}>{r}</span>
                 },
               },
@@ -685,13 +659,13 @@ export default function NodesPage() {
                   return (
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[s.tone] }} />
-                      <span style={{ color: '#15233a' }}>{s.text}</span>
+                      <span style={{ color: 'var(--ks-ink)' }}>{s.text}</span>
                     </span>
                   )
                 },
               },
-              { key: 'cpu', title: 'CPU 使用率', width: 95, render: (_, n) => usageBar(usageOf(data?.metrics?.[n.metadata?.name ?? ''], 'cpu'), cpuCores(String(alloc(n, 'cpu') ?? '')), '#2f6fed') },
-              { key: 'mem', title: '内存使用率', width: 95, render: (_, n) => usageBar(usageOf(data?.metrics?.[n.metadata?.name ?? ''], 'memory'), bytes(String(alloc(n, 'memory') ?? '')), '#27a06a') },
+              { key: 'cpu', title: 'CPU 使用率', width: 95, render: (_, n) => usageBar(usageOf(data?.metrics?.[n.metadata?.name ?? ''], 'cpu'), cpuCores(String(alloc(n, 'cpu') ?? '')), 'var(--color-brand)') },
+              { key: 'mem', title: '内存使用率', width: 95, render: (_, n) => usageBar(usageOf(data?.metrics?.[n.metadata?.name ?? ''], 'memory'), bytes(String(alloc(n, 'memory') ?? '')), 'var(--ks-ok-text)') },
               {
                 key: 'pods',
                 title: 'Pod 数量',
@@ -721,13 +695,13 @@ export default function NodesPage() {
       <div className="hidden w-[320px] shrink-0 space-y-4 xl:block">
         {active && aStatus && (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <CloudServerOutlined />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: '#15233a' }}>{active.metadata?.name}</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? '#27a06a' : '#5b6a80' }}>
+                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>{active.metadata?.name}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? 'var(--ks-ok-text)' : 'var(--ks-body)' }}>
                   <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR[aStatus.tone] }} />
                   {aStatus.text}
                 </span>
@@ -746,13 +720,13 @@ export default function NodesPage() {
             <Panel title="资源使用率" extra={<a style={{ fontSize: 12 }} onClick={() => setDetailNode(active.metadata?.name)}>查看详情 <RightOutlined style={{ fontSize: 10 }} /></a>}>
               <div className="flex justify-around py-1">
                 {[
-                  { label: 'CPU', pct: aCpuUsed !== null && aCpuTotal ? percent(aCpuUsed, aCpuTotal) : null, color: '#2f6fed', sub: aCpuTotal ? `${aCpuUsed !== null ? aCpuUsed.toFixed(1) : '-'} / ${aCpuTotal.toFixed(0)} vCPU` : '-' },
-                  { label: '内存', pct: aMemUsed !== null && aMemTotal ? percent(aMemUsed, aMemTotal) : null, color: '#27a06a', sub: aMemTotal ? `${aMemUsed !== null ? (aMemUsed / 1024 ** 3).toFixed(1) : '-'} / ${(aMemTotal / 1024 ** 3).toFixed(0)} GiB` : '-' },
+                  { label: 'CPU', pct: aCpuUsed !== null && aCpuTotal ? percent(aCpuUsed, aCpuTotal) : null, color: 'var(--color-brand)', sub: aCpuTotal ? `${aCpuUsed !== null ? aCpuUsed.toFixed(1) : '-'} / ${aCpuTotal.toFixed(0)} vCPU` : '-' },
+                  { label: '内存', pct: aMemUsed !== null && aMemTotal ? percent(aMemUsed, aMemTotal) : null, color: 'var(--ks-ok-text)', sub: aMemTotal ? `${aMemUsed !== null ? (aMemUsed / 1024 ** 3).toFixed(1) : '-'} / ${(aMemTotal / 1024 ** 3).toFixed(0)} GiB` : '-' },
                 ].map((it) => (
                   <div key={it.label} className="flex flex-col items-center gap-1">
                     <Ring pct={it.pct} color={it.color} />
-                    <div className="text-sm font-medium" style={{ color: '#15233a' }}>{it.label}</div>
-                    <div className="text-xs" style={{ color: '#8f9aa9' }}>{it.sub}</div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--ks-ink)' }}>{it.label}</div>
+                    <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>{it.sub}</div>
                   </div>
                 ))}
               </div>
@@ -761,23 +735,23 @@ export default function NodesPage() {
             <Panel title="Pod 运行情况" extra={<a style={{ fontSize: 12 }} onClick={() => navigate(clusterPath(cluster, 'res/pods'))}>查看全部 <RightOutlined style={{ fontSize: 10 }} /></a>}>
               <div className="space-y-2">
                 {[
-                  { label: '运行中', value: aPods?.running ?? 0, color: '#27a06a' },
-                  { label: '异常', value: aPods?.failed ?? 0, color: '#d94f4f' },
-                  { label: '已完成', value: aPods?.succeeded ?? 0, color: '#9aa7b8' },
+                  { label: '运行中', value: aPods?.running ?? 0, color: 'var(--ks-ok-text)' },
+                  { label: '异常', value: aPods?.failed ?? 0, color: 'var(--color-danger)' },
+                  { label: '已完成', value: aPods?.succeeded ?? 0, color: 'var(--ks-muted)' },
                 ].map((it) => (
                   <div key={it.label} className="flex items-center gap-3 text-[13px]">
                     <span className="size-[7px] rounded-full" style={{ background: it.color }} />
-                    <span className="w-12" style={{ color: '#5b6a80' }}>{it.label}</span>
-                    <span className="w-8 text-right font-medium" style={{ color: '#15233a' }}>{it.value}</span>
-                    <div className="h-1.5 flex-1 rounded-full bg-[#eef1f5]">
+                    <span className="w-12" style={{ color: 'var(--ks-body)' }}>{it.label}</span>
+                    <span className="w-8 text-right font-medium" style={{ color: 'var(--ks-ink)' }}>{it.value}</span>
+                    <div className="h-1.5 flex-1 rounded-full bg-[var(--ks-fill)]">
                       <div className="h-1.5 rounded-full" style={{ width: `${aPods?.total ? Math.round((it.value / aPods.total) * 100) : 0}%`, background: it.color }} />
                     </div>
                   </div>
                 ))}
                 <div className="flex items-center gap-3 pt-1 text-[13px]">
                   <span className="w-[19px]" />
-                  <span className="w-12" style={{ color: '#5b6a80' }}>总计</span>
-                  <span className="font-medium" style={{ color: '#15233a' }}>{aPods?.total ?? 0}</span>
+                  <span className="w-12" style={{ color: 'var(--ks-body)' }}>总计</span>
+                  <span className="font-medium" style={{ color: 'var(--ks-ink)' }}>{aPods?.total ?? 0}</span>
                 </div>
               </div>
             </Panel>
@@ -787,22 +761,22 @@ export default function NodesPage() {
                 <div className="space-y-2">
                   {nodeEvents.slice(0, 4).map((ev, i) => (
                     <div key={`${ev.metadata?.name}-${i}`} className="flex items-center gap-2 text-[13px]">
-                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: ev.type === 'Warning' ? '#d94f4f' : '#27a06a' }} />
-                      <span className="w-[104px] shrink-0 truncate font-medium" style={{ color: '#15233a' }}>{ev.reason}</span>
-                      <span className="min-w-0 flex-1 truncate" style={{ color: '#8f9aa9' }}>{ev.message}</span>
-                      <span className="shrink-0 text-xs" style={{ color: '#8f9aa9' }}>{datetime(ev.lastTimestamp ?? ev.firstTimestamp)}</span>
+                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: ev.type === 'Warning' ? 'var(--color-danger)' : 'var(--ks-ok-text)' }} />
+                      <span className="w-[104px] shrink-0 truncate font-medium" style={{ color: 'var(--ks-ink)' }}>{ev.reason}</span>
+                      <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--ks-muted)' }}>{ev.message}</span>
+                      <span className="shrink-0 text-xs" style={{ color: 'var(--ks-muted)' }}>{datetime(ev.lastTimestamp ?? ev.firstTimestamp)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无事件</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无事件</div>
               )}
             </Panel>
           </>
         )}
 
         <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+          <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
             节点是运行 kubelet 的主机，容器组被调度到节点上执行；「维护中」表示节点已停止调度，可将业务迁出后做维护。
           </div>
         </Panel>

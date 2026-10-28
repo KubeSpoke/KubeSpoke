@@ -41,7 +41,7 @@ function ChartIcon({ chart, repoUrl }: { chart: HelmChart; repoUrl: string }) {
   const [broken, setBroken] = useState(false)
   if (!src || broken) {
     return (
-      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[#eef3fb] text-base font-semibold text-[#5c7bb8]">
+      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-[var(--ks-brand-soft)] text-base font-semibold text-[#5c7bb8]">
         {(chart.name[0] ?? '?').toUpperCase()}
       </span>
     )
@@ -51,8 +51,7 @@ function ChartIcon({ chart, repoUrl }: { chart: HelmChart; repoUrl: string }) {
       src={src}
       alt=""
       onError={() => setBroken(true)}
-      className="size-10 shrink-0 rounded-md bg-white object-contain"
-      style={{ border: '1px solid #ebeef2' }}
+      className="size-10 shrink-0 rounded-lg bg-[var(--ks-fill-soft)] object-contain"
     />
   )
 }
@@ -87,11 +86,12 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
         description="浏览 chart 仓库的目录，直接装到集群里。"
         icon={<ShopOutlined />}
         namespaced={false}
+        bare
       >
         <Empty
           className="!py-16"
           description={
-            <span style={{ color: '#8f9aa9' }}>
+            <span style={{ color: 'var(--ks-muted)' }}>
               还没有 Chart 仓库。添加一个 index.yaml 仓库地址（如 https://charts.bitnami.com/bitnami）即可浏览应用。
             </span>
           }
@@ -110,6 +110,7 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
       description="目录由 agent 直接读仓库索引，不依赖集群里的 helm；安装才会真正下发资源。"
       icon={<ShopOutlined />}
       namespaced={false}
+      bare
       error={error}
       loading={loading}
       onRefresh={reload}
@@ -161,7 +162,7 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
 
       <Spin spinning={loading}>
         {charts.length === 0 && !loading ? (
-          <Empty className="!py-16" description={<span style={{ color: '#8f9aa9' }}>这个仓库里没有匹配的 chart</span>} />
+          <Empty className="!py-16" description={<span style={{ color: 'var(--ks-muted)' }}>这个仓库里没有匹配的 chart</span>} />
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {visible.map((c) => {
@@ -169,19 +170,18 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
               return (
                 <div
                   key={c.name}
-                  className="flex flex-col gap-2.5 rounded-lg bg-white p-4 transition-shadow hover:shadow-md"
-                  style={{ border: '1px solid #e6ebf1' }}
+                  className="flex flex-col gap-2.5 ks-panel p-4 ks-panel-hover"
                 >
                   <div className="flex items-start gap-3">
                     <ChartIcon chart={c} repoUrl={repo?.url ?? c.repo} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="truncate font-semibold" style={{ color: '#15233a' }}>
+                        <span className="truncate font-semibold" style={{ color: 'var(--ks-ink)' }}>
                           {c.name}
                         </span>
                         {c.deprecated && <Tag color="orange">已废弃</Tag>}
                       </div>
-                      <div className="kbd-mono mt-0.5 truncate text-xs" style={{ color: '#8f9aa9' }}>
+                      <div className="kbd-mono mt-0.5 truncate text-xs" style={{ color: 'var(--ks-muted)' }}>
                         {c.version}
                         {c.appVersion ? ` · app ${c.appVersion}` : ''}
                       </div>
@@ -190,7 +190,7 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
 
                   <Typography.Paragraph
                     ellipsis={{ rows: 2 }}
-                    style={{ marginBottom: 0, minHeight: 38, fontSize: 12, color: '#5b6a80' }}
+                    style={{ marginBottom: 0, minHeight: 38, fontSize: 12, color: 'var(--ks-body)' }}
                   >
                     {c.description || '这个 chart 没有写描述'}
                   </Typography.Paragraph>
@@ -198,7 +198,7 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
                   {!!c.keywords.length && (
                     <div className="flex flex-wrap gap-1">
                       {c.keywords.slice(0, 4).map((k) => (
-                        <span key={k} className="rounded bg-[#f4f6fa] px-1.5 py-0.5 text-[11px]" style={{ color: '#6b7a92' }}>
+                        <span key={k} className="rounded bg-[var(--ks-fill)] px-1.5 py-0.5 text-[11px]" style={{ color: 'var(--ks-muted)' }}>
                           {k}
                         </span>
                       ))}
@@ -206,7 +206,7 @@ export default function MarketTab({ cluster, repos, repoId, onRepoChange, onMana
                   )}
 
                   <div className="mt-auto flex items-center justify-between pt-1">
-                    <span className="truncate text-[11px]" style={{ color: '#a9b4c4' }}>
+                    <span className="truncate text-[11px]" style={{ color: 'var(--ks-faint)' }}>
                       {c.type || 'application'}
                       {c.kubeVersion ? ` · kube ${c.kubeVersion}` : ''}
                     </span>

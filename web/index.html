@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KubeSpoke 控制台</title>
+    <script>
+      /* 首屏防闪白：在样式生效前先把主题落到 <html> 上。
+         取值逻辑必须与 src/store/useThemeStore.ts 保持一致（key: ks.theme）。 */
+      (function () {
+        try {
+          var t = localStorage.getItem('ks.theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

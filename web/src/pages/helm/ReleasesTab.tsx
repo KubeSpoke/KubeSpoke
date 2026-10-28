@@ -140,6 +140,7 @@ export default function ReleasesTab({ cluster, repos, capability, onMarket }: Pr
       description="集群里由 helm 管起来的 release：升级、回滚、卸载都按修订记录走。"
       icon={<AppstoreOutlined />}
       namespaced={false}
+      bare
       error={error}
       loading={loading}
       onRefresh={refresh}
@@ -223,7 +224,7 @@ export default function ReleasesTab({ cluster, repos, capability, onMarket }: Pr
               title: '命名空间',
               width: 130,
               sorter: (a, b) => a.namespace.localeCompare(b.namespace),
-              render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{r.namespace}</span>,
+              render: (_, r) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{r.namespace}</span>,
             },
             { key: 'status', title: '状态', width: 140, render: (_, r) => <HelmStatus status={r.status} /> },
             {
@@ -243,9 +244,9 @@ export default function ReleasesTab({ cluster, repos, capability, onMarket }: Pr
               key: 'updated',
               title: '更新时间',
               width: 170,
-              render: (_, r) => <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>{helmTime(r.updated)}</span>,
+              render: (_, r) => <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>{helmTime(r.updated)}</span>,
             },
-            { key: 'description', title: '说明', ellipsis: true, render: (_, r) => <span className="text-xs" style={{ color: '#8f9aa9' }}>{r.description || '-'}</span> },
+            { key: 'description', title: '说明', ellipsis: true, render: (_, r) => <span className="text-xs" style={{ color: 'var(--ks-muted)' }}>{r.description || '-'}</span> },
             {
               key: 'ops',
               title: '操作',

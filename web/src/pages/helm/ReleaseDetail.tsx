@@ -112,9 +112,9 @@ export function ReleaseDetail({ cluster, namespace, name, onClose, onChanged, on
 
   const textPane = (label: string, text: string) =>
     text.trim() ? (
-      <pre className="kbd-mono m-0 max-h-[52vh] overflow-auto rounded bg-slate-50 p-3 text-xs">{text}</pre>
+      <pre className="kbd-mono m-0 max-h-[52vh] overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{text}</pre>
     ) : (
-      <Empty className="!py-14" description={<span style={{ color: '#8f9aa9' }}>{label}为空</span>} />
+      <Empty className="!py-14" description={<span style={{ color: 'var(--ks-muted)' }}>{label}为空</span>} />
     )
 
   return (
@@ -124,7 +124,7 @@ export function ReleaseDetail({ cluster, namespace, name, onClose, onChanged, on
         <span className="flex items-center gap-3">
           {name}
           {d && <HelmStatus status={d.status} />}
-          {revision > 0 && <span className="text-xs text-[#8f9aa9]">查看修订 {revision}</span>}
+          {revision > 0 && <span className="text-xs text-[var(--ks-muted)]">查看修订 {revision}</span>}
         </span>
       }
       onClose={onClose}
@@ -169,7 +169,7 @@ export function ReleaseDetail({ cluster, namespace, name, onClose, onChanged, on
                         children: (
                           <span>
                             {d?.revision ?? '-'}
-                            {revision > 0 ? <span className="ml-1 text-xs text-[#8f9aa9]">（正在看 {revision}）</span> : null}
+                            {revision > 0 ? <span className="ml-1 text-xs text-[var(--ks-muted)]">（正在看 {revision}）</span> : null}
                           </span>
                         ),
                       },
@@ -201,10 +201,10 @@ export function ReleaseDetail({ cluster, namespace, name, onClose, onChanged, on
                         title: '修订',
                         width: 64,
                         render: (_, r) => (
-                          <span className="font-medium" style={{ color: '#15233a' }}>
+                          <span className="font-medium" style={{ color: 'var(--ks-ink)' }}>
                             {r.revision}
                             {d && r.revision === d.revision ? (
-                              <span className="ml-1 text-xs font-normal text-[#2f6fed]">当前</span>
+                              <span className="ml-1 text-xs font-normal text-[var(--color-brand)]">当前</span>
                             ) : null}
                           </span>
                         ),
@@ -217,8 +217,8 @@ export function ReleaseDetail({ cluster, namespace, name, onClose, onChanged, on
                         render: (_, r) => <span className="kbd-mono truncate text-xs">{chartLabel(r.chart, r.version)}</span>,
                       },
                       { key: 'app', title: '应用版本', width: 90, render: (_, r) => <span className="text-xs">{r.appVersion || '-'}</span> },
-                      { key: 'desc', title: '说明', ellipsis: true, render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{r.description || '-'}</span> },
-                      { key: 'updated', title: '时间', width: 155, render: (_, r) => <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>{helmTime(r.updated)}</span> },
+                      { key: 'desc', title: '说明', ellipsis: true, render: (_, r) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{r.description || '-'}</span> },
+                      { key: 'updated', title: '时间', width: 155, render: (_, r) => <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>{helmTime(r.updated)}</span> },
                       {
                         key: 'ops',
                         title: '操作',

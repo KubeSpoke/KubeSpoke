@@ -48,7 +48,7 @@ const CONDITION_DOC: Record<string, string> = {
   Ready: '节点是否可以接收容器组。',
 }
 
-const TONE_COLOR: Record<string, string> = { ok: '#3ca96a', warn: '#f5a623', danger: '#ca2621', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--ks-ok-text)', warn: 'var(--color-warn)', danger: 'var(--ks-danger-text)', muted: 'var(--ks-muted)' }
 
 /** 系统架构按 KubeSphere 的写法显示为大写形式：x86_64 → AMD64、aarch64 → ARM64 */
 const archText = (arch?: string): string => {
@@ -123,10 +123,10 @@ export function NodeDetailBody({
         />
       )}
 
-      <div className="px-5 py-4">
+      <div className="rounded-xl bg-[var(--ks-fill-soft)] px-5 py-4">
         <div className="mb-3 flex items-center gap-2">
           <Tag color="blue" variant="filled">集群节点</Tag>
-          <Typography.Text strong style={{ fontSize: 13, color: '#15233a' }}>属性</Typography.Text>
+          <Typography.Text strong style={{ fontSize: 13, color: 'var(--ks-ink)' }}>属性</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {alias ? `别名：${alias} · ` : ''}当前集群：{cluster}
           </Typography.Text>
@@ -149,8 +149,8 @@ export function NodeDetailBody({
         <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
           {fields.map((f) => (
             <div key={f.label} className="min-w-0">
-              <div className="text-xs text-[#8f9aa9]">{f.label}</div>
-              <div className="mt-1 truncate text-[13px]" style={{ color: '#15233a' }}>
+              <div className="text-xs text-[var(--ks-muted)]">{f.label}</div>
+              <div className="mt-1 truncate text-[13px]" style={{ color: 'var(--ks-ink)' }}>
                 {f.value}
               </div>
             </div>
@@ -228,7 +228,7 @@ export function NodeDetailBody({
                         return (
                           <span className="inline-flex items-center gap-2 whitespace-nowrap">
                             <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[s.tone] }} />
-                            <span style={{ fontWeight: 500, color: '#15233a' }}>{s.text}</span>
+                            <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{s.text}</span>
                           </span>
                         )
                       },
@@ -276,9 +276,9 @@ export function NodeDetailBody({
                       width: 220,
                       render: (_, c) => (
                         <div className="min-w-0">
-                          <div style={{ color: '#15233a', fontWeight: 500 }}>{c.type}</div>
+                          <div style={{ color: 'var(--ks-ink)', fontWeight: 500 }}>{c.type}</div>
                           {CONDITION_DOC[c.type ?? ''] && (
-                            <div className="mt-0.5 text-xs text-[#8f9aa9]">{CONDITION_DOC[c.type ?? '']}</div>
+                            <div className="mt-0.5 text-xs text-[var(--ks-muted)]">{CONDITION_DOC[c.type ?? '']}</div>
                           )}
                         </div>
                       ),

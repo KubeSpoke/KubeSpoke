@@ -27,7 +27,7 @@ export function AddClusterDrawer({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <Drawer open={open} onClose={onClose} placement="right" size={520} title="集群接入" destroyOnHidden>
-      <div className="mb-2 text-[13px]" style={{ color: '#5b6a80' }}>
+      <div className="mb-2 text-[13px]" style={{ color: 'var(--ks-body)' }}>
         集群名称
       </div>
       <Input
@@ -39,10 +39,14 @@ export function AddClusterDrawer({ open, onClose }: { open: boolean; onClose: ()
 
       {installName ? (
         <div className="mt-4">
-          <div className="mb-2 text-[13px]" style={{ color: '#5b6a80' }}>
+          <div className="mb-2 text-[13px]" style={{ color: 'var(--ks-body)' }}>
             安装 Agent
           </div>
-          <Typography.Paragraph code copyable={{ text: installCommand }} className="!mb-0 !text-xs break-all">
+          <Typography.Paragraph
+            code
+            copyable={{ text: installCommand }}
+            className="ks-cmd !mb-0"
+          >
             {installCommand}
           </Typography.Paragraph>
         </div>

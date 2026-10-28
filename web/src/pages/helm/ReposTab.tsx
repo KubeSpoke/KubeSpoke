@@ -93,6 +93,7 @@ export default function ReposTab({ repos, loading, error, onRefresh, onPick }: P
       description="一个仓库地址对应一份 index.yaml 目录；私有仓库的用户名口令存在控制台库里，不会下发到浏览器。"
       icon={<DatabaseOutlined />}
       namespaced={false}
+      bare
       error={error}
       loading={loading}
       onRefresh={onRefresh}
@@ -140,14 +141,14 @@ export default function ReposTab({ repos, loading, error, onRefresh, onPick }: P
             key: 'username',
             title: '用户名',
             width: 140,
-            render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{r.username || '—'}</span>,
+            render: (_, r) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{r.username || '—'}</span>,
           },
           {
             key: 'addedAt',
             title: '添加时间',
             width: 170,
             render: (_, r) => (
-              <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>
+              <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>
                 {helmTime(r.addedAt)}
                 {r.createdBy ? ` · ${r.createdBy}` : ''}
               </span>

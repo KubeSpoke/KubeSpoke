@@ -49,14 +49,14 @@ const RESTART_KEY = 'kubespoke.io/restartedAt'
 /** k8s 自己维护的修订号：每次模板变更 +1，回退历史就靠它认版本 */
 const REVISION_KEY = 'deployment.kubernetes.io/revision'
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 function StatusText({ text, tone, extra }: { text: string; tone: 'ok' | 'warn' | 'danger' | 'muted'; extra?: string }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[tone] }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{text}</span>
-      {extra && <span className="text-[#8f9aa9]">{extra}</span>}
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{text}</span>
+      {extra && <span className="text-[var(--ks-muted)]">{extra}</span>}
     </span>
   )
 }
@@ -612,11 +612,11 @@ export function DeploymentDetailBody({
             { label: '创建者', value: creator },
           ] as { label: string; value?: string; node?: React.ReactNode }[]).map((it) => (
             <div key={it.label} className="min-w-0">
-              <div className="text-xs text-[#8f9aa9]">{it.label}</div>
+              <div className="text-xs text-[var(--ks-muted)]">{it.label}</div>
               {it.node ? (
                 <div className="mt-1 text-sm font-medium">{it.node}</div>
               ) : (
-                <div className="mt-1 truncate text-sm font-medium" style={{ color: '#15233a' }} title={it.value}>
+                <div className="mt-1 truncate text-sm font-medium" style={{ color: 'var(--ks-ink)' }} title={it.value}>
                   {it.value}
                 </div>
               )}
@@ -633,27 +633,27 @@ export function DeploymentDetailBody({
               label: '资源状态',
               children: (
                 <div className="p-4">
-                  <div className="mb-6 grid grid-cols-3 divide-x divide-[#edf1f6] overflow-hidden rounded-lg border border-[#edf1f6] bg-[#fafbfc]">
-                    <div className="px-5 py-4">
-                      <div className="flex items-center gap-2 text-xs text-[#8f9aa9]">
+                  <div className="mb-6 grid grid-cols-3 gap-3">
+                    <div className="rounded-xl bg-[var(--ks-fill-soft)] px-5 py-4">
+                      <div className="flex items-center gap-2 text-xs text-[var(--ks-muted)]">
                         <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[readyTone] }} />
                         就绪副本
                       </div>
-                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: 'var(--ks-ink)' }}>
                         {ready}
-                        <span className="ml-1 text-sm font-normal text-[#8f9aa9]">/ {desired}</span>
+                        <span className="ml-1 text-sm font-normal text-[var(--ks-muted)]">/ {desired}</span>
                       </div>
                     </div>
-                    <div className="px-5 py-4">
-                      <div className="text-xs text-[#8f9aa9]">当前副本</div>
-                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                    <div className="rounded-xl bg-[var(--ks-fill-soft)] px-5 py-4">
+                      <div className="text-xs text-[var(--ks-muted)]">当前副本</div>
+                      <div className="mt-2 text-2xl font-semibold leading-none" style={{ color: 'var(--ks-ink)' }}>
                         {current}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between px-5 py-4">
+                    <div className="flex items-center justify-between rounded-xl bg-[var(--ks-fill-soft)] px-5 py-4">
                       <div>
-                        <div className="text-xs text-[#8f9aa9]">期望副本</div>
-                        <div className="mt-2 flex items-center gap-2 text-2xl font-semibold leading-none" style={{ color: '#15233a' }}>
+                        <div className="text-xs text-[var(--ks-muted)]">期望副本</div>
+                        <div className="mt-2 flex items-center gap-2 text-2xl font-semibold leading-none" style={{ color: 'var(--ks-ink)' }}>
                           {desired}
                           {hpa && (
                             <Tooltip
@@ -903,11 +903,11 @@ export function DeploymentDetailBody({
                   <MetaBlock title="注解" data={deploy.data?.metadata?.annotations} />
                   <div className="mb-6">
                     <Typography.Text strong>所有者引用</Typography.Text>
-                    <div className="mt-2 text-sm text-[#5c6b80]">无</div>
+                    <div className="mt-2 text-sm text-[var(--ks-body)]">无</div>
                   </div>
                   <div>
                     <Typography.Text strong>创建者</Typography.Text>
-                    <div className="mt-2 text-sm" style={{ color: '#15233a' }}>
+                    <div className="mt-2 text-sm" style={{ color: 'var(--ks-ink)' }}>
                       {creator}
                     </div>
                   </div>
@@ -1006,7 +1006,7 @@ export function DeploymentDetailBody({
             style={{ fontSize: 12 }}
           />
         ) : (
-          <pre className="kbd-mono m-0 overflow-auto rounded bg-slate-50 p-3 text-xs" style={{ maxHeight: 520 }}>
+          <pre className="kbd-mono m-0 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs" style={{ maxHeight: 520 }}>
             {yamlModal?.text}
           </pre>
         )}
@@ -1128,13 +1128,13 @@ export function DeploymentDetailBody({
       >
         <div className="flex flex-col gap-4 py-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-[#5c6b80]">当前副本数</span>
-            <span className="font-medium" style={{ color: '#15233a' }}>
+            <span className="text-[var(--ks-body)]">当前副本数</span>
+            <span className="font-medium" style={{ color: 'var(--ks-ink)' }}>
               {current}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[#5c6b80]">期望副本数</span>
+            <span className="text-sm text-[var(--ks-body)]">期望副本数</span>
             <Space.Compact>
               <Button
                 icon={<MinusOutlined />}

@@ -27,6 +27,7 @@ import { MonitorPanel } from '../components/MonitorPanel'
 import { cpuCores, bytes, datetime, percent } from '../utils/format'
 import { internalIp, nodeRolesText, nodeStatusText } from './NodesPage'
 import type { Metrics, V1Event, V1Node } from '../types/k8s'
+import { StatCard } from '../components/StatCard'
 
 /** 集群基本信息（名称/别名/描述/类型）挂在 kube-system 项目注解上，与 KubeSphere 的工作空间注解同构 */
 const KUBE_SYSTEM = 'kube-system'
@@ -76,7 +77,7 @@ const D = {
 const WORKLOAD_KEYS = ['deployments', 'statefulsets', 'daemonsets', 'jobs', 'cronjobs'] as const
 
 /** 与「节点管理」页一致的色调 token */
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 interface NodeRow {
   name: string
@@ -265,49 +266,49 @@ export default function DashboardPage() {
     <>
       <div className="space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅（与节点管理页同款渐变 + 图标砖块） */}
         <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
         >
           <div className="flex min-w-0 items-start gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <ApartmentOutlined />
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xl font-bold" style={{ color: '#15233a' }}>集群概览</span>
-                <span className="max-w-[260px] truncate text-[13px] font-medium" style={{ color: '#2f6fed' }}>
+                <span className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>集群概览</span>
+                <span className="max-w-[260px] truncate text-[13px] font-medium" style={{ color: 'var(--color-brand)' }}>
                   {cluster}
                 </span>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs"
-                  style={running ? { color: '#27a06a', background: '#e9f8f0' } : { color: '#d94f4f', background: '#fdecec' }}
+                  style={running ? { color: 'var(--ks-ok-text)', background: 'var(--ks-ok-bg)' } : { color: 'var(--color-danger)', background: 'var(--ks-danger-bg)' }}
                 >
                   <span className="size-[6px] rounded-full" style={{ background: running ? TONE_COLOR.ok : TONE_COLOR.danger }} />
                   {running ? '运行中' : '异常'}
                 </span>
               </div>
-              <div className="mt-1 truncate text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="mt-1 truncate text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 {data?.alias ? `${data.alias} · ` : ''}
                 查看集群整体状态、资源用量、节点健康与最近事件。
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]" style={{ color: '#5b6a80' }}>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]" style={{ color: 'var(--ks-body)' }}>
                 <span><ThunderboltOutlined style={{ marginRight: 4 }} />Kubernetes {data?.version ?? '-'}</span>
                 <span><TeamOutlined style={{ marginRight: 4 }} />{nodeTotal} 个节点</span>
                 <span><ApartmentOutlined style={{ marginRight: 4 }} />{nsTotal} 个命名空间</span>
                 <span>
                   集群类型：<Tag color="blue" variant="filled" style={{ borderRadius: 6 }}>{data?.type ?? '-'}</Tag>
                 </span>
-                <span className="flex items-center gap-1" style={{ color: '#8f9aa9' }}>
+                <span className="flex items-center gap-1" style={{ color: 'var(--ks-muted)' }}>
                   API 地址：{data?.apiAddr || '-'}
                   {data?.apiAddr && <CopyButton text={data.apiAddr} />}
                 </span>
@@ -341,22 +342,22 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             label="命名空间" value={nsTotal} unit="个" tail={`正常 ${data?.coverage.activeNs ?? 0}/${nsTotal}`}
-            color="#2f6fed" bg="#e8f1ff" icon={<ApartmentOutlined />}
+            color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<ApartmentOutlined />}
             onClick={() => navigate(clusterPath(cluster, 'projects'))}
           />
           <StatCard
             label="工作负载" value={data?.counts.workloads ?? 0} unit="个" tail={`覆盖 ${data?.coverage.workloadNs ?? 0} 个项目`}
-            color="#27a06a" bg="#e6f7ef" icon={<DeploymentUnitOutlined />}
+            color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<DeploymentUnitOutlined />}
             onClick={() => navigate(clusterPath(cluster, 'deployments'))}
           />
           <StatCard
             label="服务" value={data?.counts.services ?? 0} unit="个" tail={`覆盖 ${data?.coverage.serviceNs ?? 0} 个项目`}
-            color="#7c5cff" bg="#f0ebff" icon={<GlobalOutlined />}
+            color="var(--ks-violet)" bg="var(--ks-violet-bg)" icon={<GlobalOutlined />}
             onClick={() => navigate(clusterPath(cluster, 'res/services'))}
           />
           <StatCard
             label="存储卷" value={data?.counts.pvcs ?? 0} unit="个" tail={`覆盖 ${data?.coverage.pvcNs ?? 0} 个项目`}
-            color="#f5a623" bg="#fdf3e3" icon={<DatabaseOutlined />}
+            color="var(--color-warn)" bg="var(--ks-warn-bg)" icon={<DatabaseOutlined />}
             onClick={() => navigate(clusterPath(cluster, 'res/persistentvolumeclaims'))}
           />
         </div>
@@ -365,25 +366,25 @@ export default function DashboardPage() {
           <div className="min-w-0 space-y-4">
             {/* 资源使用率 + 节点状态 */}
             <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,3fr)]">
-              <Panel title="资源使用率" extra={!data?.metricsAvailable && <span className="text-xs" style={{ color: '#b3bdcc' }}>集群未安装 metrics-server，暂无实时用量</span>}>
+              <Panel title="资源使用率" extra={!data?.metricsAvailable && <span className="text-xs" style={{ color: 'var(--ks-faint)' }}>集群未安装 metrics-server，暂无实时用量</span>}>
                 <div className="flex flex-wrap items-start justify-around gap-2 py-1">
                   <Donut label="CPU" pct={data?.metricsAvailable && u?.cpuTotal ? percent(u.cpuUsed, u.cpuTotal) : null}
-                    sub={u && u.cpuTotal ? `${data?.metricsAvailable ? u.cpuUsed.toFixed(1) : '-'} / ${u.cpuTotal.toFixed(0)} vCPU` : '-'} color="#2f6fed" />
+                    sub={u && u.cpuTotal ? `${data?.metricsAvailable ? u.cpuUsed.toFixed(1) : '-'} / ${u.cpuTotal.toFixed(0)} vCPU` : '-'} color="var(--color-brand)" />
                   <Donut label="内存" pct={data?.metricsAvailable && u?.memTotal ? percent(u.memUsed, u.memTotal) : null}
-                    sub={u && u.memTotal ? `${data?.metricsAvailable ? (u.memUsed / 1024 ** 3).toFixed(1) : '-'} / ${(u.memTotal / 1024 ** 3).toFixed(0)} GiB` : '-'} color="#59c492" />
+                    sub={u && u.memTotal ? `${data?.metricsAvailable ? (u.memUsed / 1024 ** 3).toFixed(1) : '-'} / ${(u.memTotal / 1024 ** 3).toFixed(0)} GiB` : '-'} color="var(--color-ok)" />
                   <Donut label="磁盘" pct={null}
-                    sub={u && u.diskTotal ? `- / ${(u.diskTotal / 1024 ** 3).toFixed(0)} GiB` : '-'} color="#7c5cff" />
-                  <Donut label="网络" pct={null} sub="-" color="#29b6a9" />
+                    sub={u && u.diskTotal ? `- / ${(u.diskTotal / 1024 ** 3).toFixed(0)} GiB` : '-'} color="var(--ks-violet)" />
+                  <Donut label="网络" pct={null} sub="-" color="var(--ks-teal)" />
                 </div>
                 {data?.metricsAvailable && u && (
-                  <div className="mt-3 border-t pt-3" style={{ borderColor: '#eef1f5' }}>
+                  <div className="mt-3 pt-3">
                     <MonitorPanel cluster={cluster} kind="cluster" capacity={{ cpu: u.cpuTotal, mem: u.memTotal }} />
                   </div>
                 )}
               </Panel>
 
               <Panel title="节点状态" extra={
-                <span className="flex items-center gap-3 text-xs" style={{ color: '#5b6a80' }}>
+                <span className="flex items-center gap-3 text-xs" style={{ color: 'var(--ks-body)' }}>
                   <Legend color={TONE_COLOR.ok} text={`正常 ${okNodes}`} />
                   <Legend color={TONE_COLOR.danger} text={`异常 ${nodeTotal - okNodes}`} />
                 </span>
@@ -392,20 +393,20 @@ export default function DashboardPage() {
                   {(data?.nodeRows ?? []).map((r) => (
                     <div key={r.name} className="min-w-0">
                       <div className="mb-1 flex items-center justify-between text-xs">
-                        <span className="truncate font-medium" style={{ color: '#15233a' }}>{r.name}</span>
-                        <span style={{ color: r.status === '运行中' ? '#27a06a' : TONE_COLOR.danger }}>{r.status}</span>
+                        <span className="truncate font-medium" style={{ color: 'var(--ks-ink)' }}>{r.name}</span>
+                        <span style={{ color: r.status === '运行中' ? 'var(--ks-ok-text)' : TONE_COLOR.danger }}>{r.status}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Progress percent={r.cpuPct ?? 0} showInfo={false} size="small" strokeColor="#2f6fed" className="!m-0 flex-1" />
-                        <span className="w-9 text-right text-[11px]" style={{ color: '#8f9aa9' }}>{r.cpuPct === null ? '-' : `${r.cpuPct}%`}</span>
+                        <Progress percent={r.cpuPct ?? 0} showInfo={false} size="small" strokeColor="var(--color-brand)" className="!m-0 flex-1" />
+                        <span className="w-9 text-right text-[11px]" style={{ color: 'var(--ks-muted)' }}>{r.cpuPct === null ? '-' : `${r.cpuPct}%`}</span>
                       </div>
                       <div className="mt-0.5 flex items-center gap-2">
-                        <Progress percent={r.memPct ?? 0} showInfo={false} size="small" strokeColor="#59c492" className="!m-0 flex-1" />
-                        <span className="w-9 text-right text-[11px]" style={{ color: '#8f9aa9' }}>{r.memPct === null ? '-' : `${r.memPct}%`}</span>
+                        <Progress percent={r.memPct ?? 0} showInfo={false} size="small" strokeColor="var(--color-ok)" className="!m-0 flex-1" />
+                        <span className="w-9 text-right text-[11px]" style={{ color: 'var(--ks-muted)' }}>{r.memPct === null ? '-' : `${r.memPct}%`}</span>
                       </div>
                     </div>
                   ))}
-                  {!nodeTotal && <div className="py-2 text-[13px]" style={{ color: '#8f9aa9' }}>暂无节点</div>}
+                  {!nodeTotal && <div className="py-2 text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无节点</div>}
                 </div>
               </Panel>
             </div>
@@ -428,7 +429,7 @@ export default function DashboardPage() {
                       dataIndex: 'active',
                       width: 62,
                       render: (a: boolean) => (
-                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs" style={{ color: a ? '#27a06a' : TONE_COLOR.danger }}>
+                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs" style={{ color: a ? 'var(--ks-ok-text)' : TONE_COLOR.danger }}>
                           <span className="size-[6px] rounded-full" style={{ background: a ? TONE_COLOR.ok : TONE_COLOR.danger }} />
                           {a ? '正常' : '终止中'}
                         </span>
@@ -436,7 +437,7 @@ export default function DashboardPage() {
                     },
                   ]}
                 />
-                {!data?.nsRows.length && <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无命名空间</div>}
+                {!data?.nsRows.length && <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无命名空间</div>}
               </Panel>
 
               <Panel title="节点信息" link="查看全部" onLink={() => navigate(clusterPath(cluster, 'nodes'))}>
@@ -456,7 +457,7 @@ export default function DashboardPage() {
                       render: (s: string) => (
                         <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs">
                           <span className="size-[6px] rounded-full" style={{ background: s === '运行中' ? TONE_COLOR.ok : TONE_COLOR.danger }} />
-                          <span style={{ color: '#15233a' }}>{s}</span>
+                          <span style={{ color: 'var(--ks-ink)' }}>{s}</span>
                         </span>
                       ),
                     },
@@ -465,14 +466,14 @@ export default function DashboardPage() {
                       key: 'usage',
                       width: 96,
                       render: (_: unknown, r: NodeRow) => (
-                        <span className="text-xs" style={{ color: '#5b6a80' }}>
+                        <span className="text-xs" style={{ color: 'var(--ks-body)' }}>
                           {r.cpuPct === null ? '-' : `${r.cpuPct}%`} / {r.memPct === null ? '-' : `${r.memPct}%`}
                         </span>
                       ),
                     },
                   ]}
                 />
-                {!nodeTotal && <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无节点</div>}
+                {!nodeTotal && <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无节点</div>}
               </Panel>
 
               <Panel title="最近事件">
@@ -481,9 +482,9 @@ export default function DashboardPage() {
                     {(data?.events ?? []).map((e, i) => (
                       <div key={e.metadata?.uid ?? i} className="flex gap-3 text-xs">
                         <span className="mt-1 size-[7px] shrink-0 rounded-full" style={{ background: e.type === 'Warning' ? TONE_COLOR.warn : TONE_COLOR.ok }} />
-                        <span className="w-[86px] shrink-0" style={{ color: '#8f9aa9' }}>{shortTime(e.lastTimestamp ?? e.firstTimestamp)}</span>
-                        <span className="min-w-0 flex-1 truncate" style={{ color: '#5b6a80' }}>
-                          <span style={{ color: e.type === 'Warning' ? TONE_COLOR.danger : '#15233a', fontWeight: 500 }}>
+                        <span className="w-[86px] shrink-0" style={{ color: 'var(--ks-muted)' }}>{shortTime(e.lastTimestamp ?? e.firstTimestamp)}</span>
+                        <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--ks-body)' }}>
+                          <span style={{ color: e.type === 'Warning' ? TONE_COLOR.danger : 'var(--ks-ink)', fontWeight: 500 }}>
                             {e.involvedObject?.kind} {e.involvedObject?.name}
                           </span>
                           {' '}{e.reason}{e.message ? ` · ${e.message}` : ''}
@@ -492,7 +493,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无事件</div>
+                  <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无事件</div>
                 )}
               </Panel>
             </div>
@@ -513,11 +514,11 @@ export default function DashboardPage() {
             </Panel>
 
             <Panel title="快速操作">
-              <div className="-mx-4 -my-3">
+              <div className="-mx-2 -my-1 space-y-0.5">
                 <QuickAction icon={<FileProtectOutlined />} label="查看 kubeconfig" onClick={() => setKubeconfigOpen(true)} />
                 <QuickAction icon={<CodeOutlined />} label="kubectl 常用命令" onClick={() => setKubectlOpen(true)} />
                 <QuickAction icon={<GlobalOutlined />} label="查看日志" onClick={() => navigate(clusterPath(cluster, 'res/pods'))} />
-                <QuickAction icon={<SafetyCertificateOutlined />} label="集群设置" onClick={() => navigate(clusterPath(cluster, 'settings/base-info'))} last />
+                <QuickAction icon={<SafetyCertificateOutlined />} label="集群设置" onClick={() => navigate(clusterPath(cluster, 'settings/base-info'))} />
               </div>
             </Panel>
 
@@ -527,12 +528,12 @@ export default function DashboardPage() {
                   {(data?.alerts ?? []).map((a, i) => (
                     <div key={i} className="flex gap-2.5 text-[13px]">
                       <span className="mt-1.5 size-[7px] shrink-0 rounded-full" style={{ background: a.level === 'error' ? TONE_COLOR.danger : TONE_COLOR.warn }} />
-                      <span style={{ color: '#5b6a80' }}>{a.text}</span>
+                      <span style={{ color: 'var(--ks-body)' }}>{a.text}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无告警</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无告警</div>
               )}
             </Panel>
           </div>
@@ -546,10 +547,10 @@ export default function DashboardPage() {
         </Typography.Paragraph>
         <div className="space-y-2">
           {KUBECTL_COMMANDS.map((item) => (
-            <div key={item.cmd} className="flex items-center justify-between gap-3 rounded border border-[#ebeef2] bg-[#f9fbfd] px-3 py-2">
+            <div key={item.cmd} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--ks-fill-soft)] px-4 py-2.5">
               <div className="min-w-0 flex-1">
                 <Typography.Text className="kbd-mono !text-xs" ellipsis={{ tooltip: item.cmd }}>{item.cmd}</Typography.Text>
-                <div className="mt-0.5 truncate text-[11px] text-[#8f9aa9]">{item.desc}</div>
+                <div className="mt-0.5 truncate text-[11px] text-[var(--ks-muted)]">{item.desc}</div>
               </div>
               <CopyButton text={item.cmd} />
             </div>
@@ -582,50 +583,24 @@ export default function DashboardPage() {
 /** 白色分区卡（与节点管理页同款：46px 标题栏 + 分隔线 + 14px 600 标题） */
 function Panel({ title, extra, link, onLink, children }: { title: string; extra?: ReactNode; link?: string; onLink?: () => void; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         <span className="flex items-center gap-2">
           {extra}
           {link && (
-            <a className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: 12, color: '#2f6fed' }} onClick={onLink}>
+            <a className="flex items-center gap-1 whitespace-nowrap" style={{ fontSize: 12, color: 'var(--color-brand)' }} onClick={onLink}>
               {link} <RightOutlined style={{ fontSize: 10 }} />
             </a>
           )}
         </span>
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
 
 /** 统计卡（节点管理页同款造型；点击行为沿用原「资源计数卡」的跳转） */
-function StatCard({ label, value, unit, tail, color, bg, icon, onClick }: {
-  label: string; value: number; unit?: string; tail?: string; color: string; bg: string; icon: ReactNode; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: '1px solid #e6ebf1' }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            {unit && <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>{unit}</span>}
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="whitespace-nowrap text-xs" style={{ color: '#8f9aa9' }}>{tail}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
-    </div>
-  )
-}
 
 function Donut({ label, pct, sub, color }: { label: string; pct: number | null; sub: string; color: string }) {
   return (
@@ -638,14 +613,14 @@ function Donut({ label, pct, sub, color }: { label: string; pct: number | null; 
         strokeWidth={10}
         format={() =>
           pct === null ? (
-            <span style={{ fontSize: 11, color: '#b3bdcc' }}>无数据</span>
+            <span style={{ fontSize: 11, color: 'var(--ks-faint)' }}>无数据</span>
           ) : (
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{pct}%</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{pct}%</span>
           )
         }
       />
-      <div className="text-sm font-medium" style={{ color: '#15233a' }}>{label}</div>
-      <div className="text-xs" style={{ color: '#8f9aa9' }}>{sub}</div>
+      <div className="text-sm font-medium" style={{ color: 'var(--ks-ink)' }}>{label}</div>
+      <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>{sub}</div>
     </div>
   )
 }
@@ -659,16 +634,16 @@ function Legend({ color, text }: { color: string; text: string }) {
   )
 }
 
-function QuickAction({ icon, label, onClick, last }: { icon: ReactNode; label: string; onClick: () => void; last?: boolean }) {
+function QuickAction({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
     <div
-      className={`flex cursor-pointer items-center gap-3 px-4 py-3 text-[13px] transition-colors hover:bg-[#f5f8fd] ${last ? '' : 'border-b border-[#f0f3f7]'}`}
-      style={{ color: '#5b6a80' }}
+      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-3 text-[13px] transition-colors hover:bg-[var(--ks-fill-soft)]"
+      style={{ color: 'var(--ks-body)' }}
       onClick={onClick}
     >
-      <span className="text-base" style={{ color: '#2f6fed' }}>{icon}</span>
+      <span className="text-base" style={{ color: 'var(--color-brand)' }}>{icon}</span>
       <span className="flex-1">{label}</span>
-      <RightOutlined style={{ fontSize: 11, color: '#c9d2de' }} />
+      <RightOutlined style={{ fontSize: 11, color: 'var(--ks-faint)' }} />
     </div>
   )
 }
@@ -676,8 +651,8 @@ function QuickAction({ icon, label, onClick, last }: { icon: ReactNode; label: s
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex gap-3 text-[13px]">
-      <span className="w-[88px] shrink-0" style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="min-w-0 flex-1 break-all" style={{ color: '#15233a' }}>{children}</span>
+      <span className="w-[88px] shrink-0" style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="min-w-0 flex-1 break-all" style={{ color: 'var(--ks-ink)' }}>{children}</span>
     </div>
   )
 }
@@ -701,6 +676,6 @@ function CopyButton({ text }: { text: string }) {
     }
   }
   return (
-    <Button size="small" type="text" icon={<CopyOutlined />} className="!h-7 w-7 shrink-0 p-0 text-[#5c6b80]" onClick={copy} />
+    <Button size="small" type="text" icon={<CopyOutlined />} className="!h-7 w-7 shrink-0 p-0 text-[var(--ks-body)]" onClick={copy} />
   )
 }

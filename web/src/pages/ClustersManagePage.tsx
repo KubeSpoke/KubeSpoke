@@ -24,6 +24,7 @@ import { internalIp } from './NodesPage'
 import type { V1Node } from '../types/k8s'
 import type { ResourceDescriptor } from '../config/nav'
 import { clusterPath } from '../config/nav'
+import { StatCard } from '../components/StatCard'
 
 /** 集群展示名/别名/类型挂在 kube-system 注解上（与概览页同一套约定） */
 const ANNOTATION_ALIAS = 'kubespoke.io/alias-name'
@@ -56,13 +57,13 @@ interface ClusterRow {
 const readyCount = (nodes: V1Node[]) =>
   nodes.filter((n) => n.status?.conditions?.some((c) => c.type === 'Ready' && c.status === 'True')).length
 
-const AVATAR_COLORS = ['#2f6fed', '#29b6a9', '#7c5cff', '#f5a623', '#36b37e', '#ff7a59']
+const AVATAR_COLORS = ['var(--color-brand)', 'var(--ks-teal)', 'var(--ks-violet)', 'var(--color-warn)', 'var(--ks-ok-text)', '#ff7a59']
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 const STATUS_TONE: Record<string, { dot: string; text: string; bg: string }> = {
-  运行中: { dot: TONE_COLOR.ok, text: '#1e9c60', bg: '#e9f8f0' },
-  异常: { dot: TONE_COLOR.danger, text: '#d94f4f', bg: '#fdecec' },
+  运行中: { dot: TONE_COLOR.ok, text: 'var(--ks-ok-text)', bg: 'var(--ks-ok-bg)' },
+  异常: { dot: TONE_COLOR.danger, text: 'var(--color-danger)', bg: 'var(--ks-danger-bg)' },
 }
 
 // ---------------------------------------------------------------- 页面小组件（对齐节点管理页，文件内本地实现）
@@ -70,12 +71,12 @@ const STATUS_TONE: Record<string, { dot: string; text: string; bg: string }> = {
 /** 右侧竖排面板（与节点管理页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -90,7 +91,7 @@ function Ring({ pct, color }: { pct: number | null; color: string }) {
       strokeWidth={10}
       format={() =>
         pct === null ? (
-          <span style={{ fontSize: 11, color: '#b3bdcc' }}>无数据</span>
+          <span style={{ fontSize: 11, color: 'var(--ks-faint)' }}>无数据</span>
         ) : (
           <span style={{ fontSize: 14, fontWeight: 600 }}>{pct}%</span>
         )
@@ -102,63 +103,10 @@ function Ring({ pct, color }: { pct: number | null; color: string }) {
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>
         {value}
       </span>
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  total,
-  pct,
-  color,
-  bg,
-  icon,
-  active,
-  onClick,
-}: {
-  label: string
-  value: number
-  total: number
-  pct: string
-  color: string
-  bg: string
-  icon: ReactNode
-  active?: boolean
-  onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>
-          {icon}
-        </span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>
-            {label}
-          </div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>
-              / {total}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>
-          {pct}
-        </span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
     </div>
   )
 }
@@ -281,7 +229,7 @@ export default function ClustersManagePage() {
           <div className="min-w-0">
             {/* 点名称＝把该集群设为当前集群（与顶栏选择器同一个状态），进入控制台走「进入」 */}
             <span className="flex items-center gap-2">
-              <Typography.Link className="truncate !font-medium" style={{ color: r.name === current ? '#2f6fed' : '#15233a' }} onClick={() => setCluster(r.name)}>
+              <Typography.Link className="truncate !font-medium" style={{ color: r.name === current ? 'var(--color-brand)' : 'var(--ks-ink)' }} onClick={() => setCluster(r.name)}>
                 {r.alias || r.name}
               </Typography.Link>
               {r.name === current && (
@@ -290,7 +238,7 @@ export default function ClustersManagePage() {
                 </Tag>
               )}
             </span>
-            <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{r.address || '-'}</div>
+            <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{r.address || '-'}</div>
           </div>
         </div>
       ),
@@ -324,12 +272,12 @@ export default function ClustersManagePage() {
       render: (_: unknown, r: ClusterRow) => (
         <div className="flex items-center gap-3">
           <div className="w-20">
-            <div className="text-xs" style={{ color: '#5b6a80' }}>{r.cpuPct === null ? '-' : `${r.cpuPct}%`}</div>
-            <Progress percent={r.cpuPct ?? 0} showInfo={false} size="small" strokeColor="#2f6fed" />
+            <div className="text-xs" style={{ color: 'var(--ks-body)' }}>{r.cpuPct === null ? '-' : `${r.cpuPct}%`}</div>
+            <Progress percent={r.cpuPct ?? 0} showInfo={false} size="small" strokeColor="var(--color-brand)" />
           </div>
           <div className="w-20">
-            <div className="text-xs" style={{ color: '#5b6a80' }}>{r.memPct === null ? '-' : `${r.memPct}%`}</div>
-            <Progress percent={r.memPct ?? 0} showInfo={false} size="small" strokeColor="#59c492" />
+            <div className="text-xs" style={{ color: 'var(--ks-body)' }}>{r.memPct === null ? '-' : `${r.memPct}%`}</div>
+            <Progress percent={r.memPct ?? 0} showInfo={false} size="small" strokeColor="var(--color-ok)" />
           </div>
         </div>
       ),
@@ -358,7 +306,7 @@ export default function ClustersManagePage() {
       dataIndex: 'created',
       width: 170,
       sorter: (a: ClusterRow, b: ClusterRow) => (a.created ?? '').localeCompare(b.created ?? ''),
-      render: (c?: string) => <span style={{ color: '#5b6a80' }}>{datetime(c)}</span>,
+      render: (c?: string) => <span style={{ color: 'var(--ks-body)' }}>{datetime(c)}</span>,
     },
     {
       title: '操作',
@@ -395,21 +343,21 @@ export default function ClustersManagePage() {
     <div className="flex items-start gap-4">
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
-        {/* 渐变横幅 */}
+        {/* 页头横幅 */}
         <div
-          className="flex items-center justify-between gap-4 rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel flex items-center justify-between gap-4 px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl"
-              style={{ background: 'linear-gradient(135deg, #dbeafe, #eff6ff)', color: '#2f6fed', border: '1px solid #cfe0fb' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <ClusterOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>集群管理</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>集群管理</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 统一管理接入的多集群 Kubernetes 资源，查看集群状态、节点规模与资源使用情况。
               </div>
             </div>
@@ -427,26 +375,26 @@ export default function ClustersManagePage() {
         {/* 可点击统计卡 */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
-            label="集群总数" value={rows.length} total={rows.length} pct="100%"
-            color="#2f6fed" bg="#e8f1ff" icon={<ClusterOutlined />}
-            active={statusFilter === 'all'} onClick={() => setStatusFilter('all')}
+            label="集群总数" value={rows.length}
+            color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<ClusterOutlined />}
+            onClick={() => setStatusFilter('all')}
           />
           <StatCard
             label="运行中" value={counts.running} total={rows.length}
             pct={rows.length ? `${Math.round((counts.running / rows.length) * 100)}%` : '0%'}
-            color="#27a06a" bg="#e6f7ef" icon={<CheckCircleOutlined />}
+            color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<CheckCircleOutlined />}
             active={statusFilter === '运行中'} onClick={() => setStatusFilter(statusFilter === '运行中' ? 'all' : '运行中')}
           />
           <StatCard
             label="异常" value={counts.abnormal} total={rows.length}
             pct={rows.length ? `${Math.round((counts.abnormal / rows.length) * 100)}%` : '0%'}
-            color="#d94f4f" bg="#fdecec" icon={<WarningOutlined />}
+            color="var(--color-danger)" bg="var(--ks-danger-bg)" icon={<WarningOutlined />}
             active={statusFilter === '异常'} onClick={() => setStatusFilter(statusFilter === '异常' ? 'all' : '异常')}
           />
         </div>
 
         {/* 工具栏 + 表格卡 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
             <Button
               type="primary"
@@ -455,7 +403,7 @@ export default function ClustersManagePage() {
             >
               添加集群
             </Button>
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>集群状态</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>集群状态</span>
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
@@ -468,7 +416,7 @@ export default function ClustersManagePage() {
                 { value: '异常', label: '异常' },
               ]}
             />
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>集群类型</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>集群类型</span>
             <Select
               value={typeFilter}
               onChange={setTypeFilter}
@@ -484,7 +432,7 @@ export default function ClustersManagePage() {
             <span className="ml-auto flex items-center gap-2">
               <Input
                 allowClear
-                prefix={<SearchOutlined style={{ color: '#a0aab8' }} />}
+                prefix={<SearchOutlined style={{ color: 'var(--ks-faint)' }} />}
                 placeholder="搜索集群名称、别名或地址"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
@@ -516,7 +464,7 @@ export default function ClustersManagePage() {
             locale={{
               emptyText: (
                 <div className="py-10 text-center">
-                  <div className="text-sm" style={{ color: '#8f9aa9' }}>暂无在线集群</div>
+                  <div className="text-sm" style={{ color: 'var(--ks-muted)' }}>暂无在线集群</div>
                   <Button type="link" onClick={() => setAddOpen(true)}>去接入集群</Button>
                 </div>
               ),
@@ -529,12 +477,12 @@ export default function ClustersManagePage() {
       <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
         {active && aTone && (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <CloudServerOutlined />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: '#15233a' }}>
+                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>
                   {active.alias || active.name}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: aTone.bg, color: aTone.text }}>
@@ -555,26 +503,26 @@ export default function ClustersManagePage() {
             <Panel title="资源使用率" extra={<a style={{ fontSize: 12 }} onClick={() => enter(active)}>进入集群 <RightOutlined style={{ fontSize: 10 }} /></a>}>
               <div className="flex justify-around py-1">
                 {[
-                  { label: 'CPU', pct: active.cpuPct, color: '#2f6fed' },
-                  { label: '内存', pct: active.memPct, color: '#27a06a' },
+                  { label: 'CPU', pct: active.cpuPct, color: 'var(--color-brand)' },
+                  { label: '内存', pct: active.memPct, color: 'var(--ks-ok-text)' },
                 ].map((it) => (
                   <div key={it.label} className="flex flex-col items-center gap-1">
                     <Ring pct={it.pct} color={it.color} />
-                    <div className="text-sm font-medium" style={{ color: '#15233a' }}>{it.label}</div>
-                    <div className="text-xs" style={{ color: '#8f9aa9' }}>{it.pct === null ? '无数据' : `已用 ${it.pct}%`}</div>
+                    <div className="text-sm font-medium" style={{ color: 'var(--ks-ink)' }}>{it.label}</div>
+                    <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>{it.pct === null ? '无数据' : `已用 ${it.pct}%`}</div>
                   </div>
                 ))}
               </div>
             </Panel>
 
             <Panel title="最近事件">
-              <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无事件</div>
+              <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无事件</div>
             </Panel>
           </>
         )}
 
         <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+          <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
             点击集群名称可将其设为当前集群，「进入」打开集群概览，「详情」在右侧抽屉查看和编辑集群信息；「异常」表示该集群当前没有就绪的在线节点。
           </div>
         </Panel>

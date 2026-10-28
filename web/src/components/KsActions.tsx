@@ -163,7 +163,7 @@ function YamlBody({ obj, onCancel }: BodyProps) {
   const text = toYaml(obj)
   return (
     <>
-      <pre className="kbd-mono m-0 max-h-[52vh] overflow-auto rounded bg-slate-50 p-3 text-xs">{text}</pre>
+      <pre className="kbd-mono m-0 max-h-[52vh] overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{text}</pre>
       <div className="mt-4 text-right">
         <Button onClick={onCancel}>关闭</Button>
       </div>

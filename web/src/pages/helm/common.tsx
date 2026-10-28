@@ -5,7 +5,7 @@ export function HelmStatus({ status }: { status?: string }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       <span className="size-[7px] shrink-0 rounded-full" style={{ background: helmTone(status) }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{status || '-'}</span>
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{status || '-'}</span>
     </span>
   )
 }

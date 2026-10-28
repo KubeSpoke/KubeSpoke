@@ -26,6 +26,7 @@ import { toYaml } from '../utils/yaml'
 import CanaryModal from './network/CanaryModal'
 import CreateIngressModal from './network/CreateIngressModal'
 import CreateServiceModal from './network/CreateServiceModal'
+import { StatCard } from '../components/StatCard'
 
 /** Endpoint 没有独立菜单位，但详情路由复用通用资源详情页 */
 const ENDPOINTS: ResourceDescriptor = {
@@ -46,13 +47,13 @@ const TABS = [
   { key: 'endpoints', label: 'Endpoint' },
 ]
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 const TYPE_STYLE: Record<string, { color: string; bg: string }> = {
-  ClusterIP: { color: '#2f6fed', bg: '#e8f1ff' },
-  NodePort: { color: '#7c5cff', bg: '#f0ebff' },
-  LoadBalancer: { color: '#d98a12', bg: '#fff4e0' },
-  ExternalName: { color: '#1fa79a', bg: '#e2f7f5' },
+  ClusterIP: { color: 'var(--color-brand)', bg: 'var(--ks-brand-bg)' },
+  NodePort: { color: 'var(--ks-violet)', bg: 'var(--ks-violet-bg)' },
+  LoadBalancer: { color: 'var(--ks-warn-text)', bg: 'var(--ks-warn-bg)' },
+  ExternalName: { color: 'var(--ks-teal)', bg: 'var(--ks-teal-bg)' },
 }
 
 const rec = (o: K8sObject, k: 'spec' | 'status') => ((o[k] ?? {}) as Record<string, unknown>)
@@ -177,36 +178,12 @@ const emptyCounts = { total: 0, running: 0, abnormal: 0, deleting: 0 }
 /** 右侧竖排面板（与工作负载页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; color: string; bg: string; icon: React.ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -214,8 +191,8 @@ function StatCard({ label, value, total, color, bg, icon, active, onClick }: {
 function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[60%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[60%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -479,8 +456,8 @@ export default function ServicesPage() {
     <div className="flex items-center gap-3">
       <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: bg, color }}>{icon}</span>
       <div className="min-w-0 flex-1">
-        <a className="block truncate font-medium" style={{ color: '#15233a' }} onClick={() => openDetail(r)}>{r.name}</a>
-        <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
+        <a className="block truncate font-medium" style={{ color: 'var(--ks-ink)' }} onClick={() => openDetail(r)}>{r.name}</a>
+        <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
       </div>
     </div>
   )
@@ -489,7 +466,7 @@ export default function ServicesPage() {
     title: '创建时间',
     width: 132,
     sorter: (a: Row, b: Row) => (a.o.metadata?.creationTimestamp ?? '').localeCompare(b.o.metadata?.creationTimestamp ?? ''),
-    render: (_: unknown, r: Row) => <span className="text-xs" style={{ color: '#5b6a80' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
+    render: (_: unknown, r: Row) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
   }
 
   const nsCol = { title: '命名空间', dataIndex: 'ns', width: 120, sorter: (a: Row, b: Row) => a.ns.localeCompare(b.ns) }
@@ -513,7 +490,7 @@ export default function ServicesPage() {
     switch (tab) {
       case 'services':
         return [
-          { title: '名称', dataIndex: 'name', width: 150, sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <GlobalOutlined />, '#2f6fed', '#e8f1ff') },
+          { title: '名称', dataIndex: 'name', width: 150, sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <GlobalOutlined />, 'var(--color-brand)', 'var(--ks-brand-bg)') },
           nsCol,
           {
             title: '类型',
@@ -521,7 +498,7 @@ export default function ServicesPage() {
             sorter: (a: Row, b: Row) => String(rec(a.o, 'spec').type ?? 'ClusterIP').localeCompare(String(rec(b.o, 'spec').type ?? 'ClusterIP')),
             render: (_: unknown, r: Row) => {
               const t = (rec(r.o, 'spec').type as string) || 'ClusterIP'
-              const s = TYPE_STYLE[t] ?? { color: '#5b6a80', bg: '#eef1f5' }
+              const s = TYPE_STYLE[t] ?? { color: 'var(--ks-body)', bg: 'var(--ks-fill)' }
               return <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: s.bg, color: s.color }}>{t}</span>
             },
           },
@@ -533,7 +510,7 @@ export default function ServicesPage() {
         ]
       case 'ingresses':
         return [
-          { title: '名称', dataIndex: 'name', sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <PartitionOutlined />, '#7c5cff', '#f0ebff') },
+          { title: '名称', dataIndex: 'name', sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <PartitionOutlined />, 'var(--ks-violet)', 'var(--ks-violet-bg)') },
           nsCol,
           { title: '入口地址', ellipsis: true, render: (_: unknown, r: Row) => <span className="kbd-mono text-xs">{ingressHosts(r.o)}</span> },
           {
@@ -550,7 +527,7 @@ export default function ServicesPage() {
         ]
       case 'endpoints':
         return [
-          { title: '名称', dataIndex: 'name', sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <ThunderboltOutlined />, '#1fa79a', '#e2f7f5') },
+          { title: '名称', dataIndex: 'name', sorter: (a: Row, b: Row) => a.name.localeCompare(b.name), render: (_: unknown, r: Row) => nameCell(r, <ThunderboltOutlined />, 'var(--ks-teal)', 'var(--ks-teal-bg)') },
           nsCol,
           { title: '可用地址', width: 100, sorter: (a: Row, b: Row) => epAddresses(a.o).length - epAddresses(b.o).length, render: (_: unknown, r: Row) => epAddresses(r.o).length },
           { title: '未就绪地址', width: 110, render: (_: unknown, r: Row) => epNotReady(r.o).length },
@@ -583,10 +560,10 @@ export default function ServicesPage() {
 
   const c = counts[tab as keyof typeof counts] ?? emptyCounts
   const statDefs = [
-    { label: `${TABS.find((t) => t.key === tab)?.label} 总数`, value: c.total, color: '#2f6fed', bg: '#e8f1ff', icon: tab === 'ingresses' ? <PartitionOutlined /> : tab === 'endpoints' ? <ThunderboltOutlined /> : <GlobalOutlined />, filter: undefined },
-    { label: '运行中', value: c.running, color: '#27a06a', bg: '#e6f7ef', icon: <GlobalOutlined />, filter: 'running' },
-    { label: '异常', value: c.abnormal, color: '#d98a12', bg: '#fff4e0', icon: <ExclamationCircleOutlined />, filter: 'abnormal' },
-    { label: '待删除', value: c.deleting, color: '#7c5cff', bg: '#f0ebff', icon: <ClockCircleOutlined />, filter: 'deleting' },
+    { label: `${TABS.find((t) => t.key === tab)?.label} 总数`, value: c.total, color: 'var(--color-brand)', bg: 'var(--ks-brand-bg)', icon: tab === 'ingresses' ? <PartitionOutlined /> : tab === 'endpoints' ? <ThunderboltOutlined /> : <GlobalOutlined />, filter: undefined },
+    { label: '运行中', value: c.running, color: 'var(--ks-ok-text)', bg: 'var(--ks-ok-bg)', icon: <GlobalOutlined />, filter: 'running' },
+    { label: '异常', value: c.abnormal, color: 'var(--ks-warn-text)', bg: 'var(--ks-warn-bg)', icon: <ExclamationCircleOutlined />, filter: 'abnormal' },
+    { label: '待删除', value: c.deleting, color: 'var(--ks-violet)', bg: 'var(--ks-violet-bg)', icon: <ClockCircleOutlined />, filter: 'deleting' },
   ]
   const rowTone = (r: Row): 'ok' | 'warn' | 'danger' | 'muted' => {
     if (r.o.metadata?.deletionTimestamp) return 'muted'
@@ -607,26 +584,26 @@ export default function ServicesPage() {
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅 */}
         <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <GlobalOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>服务与发现</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>服务与发现</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 管理集群中的 Service、Ingress、DNS 和 Endpoint 等资源。
               </div>
             </div>
@@ -661,7 +638,7 @@ export default function ServicesPage() {
         )}
 
         {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
             {tab === 'services' && (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
@@ -676,13 +653,13 @@ export default function ServicesPage() {
             {selected.length > 0 && (
               <Button danger onClick={batchDelete}>批量删除（{selected.length}）</Button>
             )}
-            <span className="ml-1 text-[13px]" style={{ color: '#8f9aa9' }}>命名空间</span>
+            <span className="ml-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>命名空间</span>
             <Select allowClear placeholder="全部" style={{ width: 95 }} value={filterNs} onChange={setFilterNs} options={nsOptions} suffixIcon={null} variant="filled" />
             {tab === 'services' && (
               <>
-                <span className="text-[13px]" style={{ color: '#8f9aa9' }}>类型</span>
+                <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>类型</span>
                 <Select allowClear placeholder="全部" style={{ width: 95 }} value={filterType} onChange={setFilterType} options={Object.keys(TYPE_STYLE).map((t) => ({ label: t, value: t }))} suffixIcon={null} variant="filled" />
-                <span className="text-[13px]" style={{ color: '#8f9aa9' }}>选择器</span>
+                <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>选择器</span>
                 <Select allowClear placeholder="全部" style={{ width: 120 }} value={filterSelector} onChange={setFilterSelector} options={selectorOptions} suffixIcon={null} variant="filled" />
               </>
             )}
@@ -701,7 +678,7 @@ export default function ServicesPage() {
             <Empty
               className="!py-20"
               description={
-                <span style={{ color: '#8f9aa9' }}>
+                <span style={{ color: 'var(--ks-muted)' }}>
                   当前集群未安装 DNS 服务发现组件（KubeSphere 网络策略 CRD 不存在）。<br />
                   可使用 Service 的集群域名 <span className="kbd-mono">svc.ns.svc.cluster.local</span> 完成服务解析。
                 </span>
@@ -741,19 +718,19 @@ export default function ServicesPage() {
       <div className="hidden w-[320px] shrink-0 space-y-4 xl:block">
         {tab === 'dns' || !active ? (
           <Panel title="使用小贴士">
-            <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+            <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
               Service 为一组 Pod 提供稳定的访问入口；Ingress 基于域名与路径把集群外流量路由到 Service。
             </div>
           </Panel>
         ) : tab === 'services' ? (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <GlobalOutlined />
                 </span>
-                <span className="min-w-0 truncate text-base font-bold" style={{ color: '#15233a' }}>{active.name}</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[svcStatus(active.o).tone]}1a`, color: TONE_COLOR[svcStatus(active.o).tone] === '#59c492' ? '#27a06a' : '#5b6a80' }}>
+                <span className="min-w-0 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>{active.name}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[svcStatus(active.o).tone]}1a`, color: TONE_COLOR[svcStatus(active.o).tone] === 'var(--color-ok)' ? 'var(--ks-ok-text)' : 'var(--ks-body)' }}>
                   <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR[svcStatus(active.o).tone] }} />
                   {svcStatus(active.o).text}
                 </span>
@@ -798,7 +775,7 @@ export default function ServicesPage() {
                 />
               }
             >
-              <div className="kbd-mono text-[13px]" style={{ color: '#15233a' }}>{selectorText(active.o) || '无选择器'}</div>
+              <div className="kbd-mono text-[13px]" style={{ color: 'var(--ks-ink)' }}>{selectorText(active.o) || '无选择器'}</div>
             </Panel>
 
             <Panel title="相关 Pod" extra={<a style={{ fontSize: 12 }} onClick={() => navigate(clusterPath(cluster, 'res/pods'))}>查看全部 <RightOutlined style={{ fontSize: 10 }} /></a>}>
@@ -814,14 +791,14 @@ export default function ServicesPage() {
                         onClick={() => setDetailPod({ ns: p.metadata?.namespace ?? 'default', name: p.metadata?.name ?? '' })}
                       >
                         <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[tone] }} />
-                        <span className="min-w-0 flex-1 truncate" style={{ color: '#15233a' }}>{p.metadata?.name}</span>
-                        <span className="rounded px-1.5 py-0.5 text-xs" style={{ background: `${TONE_COLOR[tone]}1a`, color: tone === 'ok' ? '#27a06a' : '#5b6a80' }}>{phase}</span>
+                        <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--ks-ink)' }}>{p.metadata?.name}</span>
+                        <span className="rounded px-1.5 py-0.5 text-xs" style={{ background: `${TONE_COLOR[tone]}1a`, color: tone === 'ok' ? 'var(--ks-ok-text)' : 'var(--ks-body)' }}>{phase}</span>
                       </div>
                     )
                   })}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>无匹配的选择器 Pod</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>无匹配的选择器 Pod</div>
               )}
             </Panel>
 
@@ -829,22 +806,22 @@ export default function ServicesPage() {
               {activeEp && epAddresses(activeEp).length ? (
                 <div className="space-y-1">
                   {epAddresses(activeEp).slice(0, 6).map((a) => (
-                    <div key={a} className="kbd-mono text-[13px]" style={{ color: '#15233a' }}>{a}</div>
+                    <div key={a} className="kbd-mono text-[13px]" style={{ color: 'var(--ks-ink)' }}>{a}</div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无可用端点</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无可用端点</div>
               )}
             </Panel>
           </>
         ) : tab === 'ingresses' ? (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #9d86ff, #6a48e0)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-violet-bg)", color: "var(--ks-violet)" }}>
                   <PartitionOutlined />
                 </span>
-                <span className="min-w-0 truncate text-base font-bold" style={{ color: '#15233a' }}>{active.name}</span>
+                <span className="min-w-0 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>{active.name}</span>
                 <Dropdown menu={rowMenu(active)} trigger={['click']}>
                   <Button type="text" size="small" style={{ marginLeft: 'auto' }}>⋯</Button>
                 </Dropdown>
@@ -865,28 +842,28 @@ export default function ServicesPage() {
             <Panel title="转发规则">
               <div className="space-y-2">
                 {((rec(active.o, 'spec').rules as { host?: string; http?: { paths?: { path?: string; pathType?: string; backend?: { service?: { name?: string; port?: { number?: number; name?: string } } } }[] } }[] | undefined) ?? []).map((r, i) => (
-                  <div key={i} className="text-[13px]" style={{ color: '#15233a' }}>
+                  <div key={i} className="text-[13px]" style={{ color: 'var(--ks-ink)' }}>
                     <div className="kbd-mono font-medium">{r.host || '*'}</div>
                     {(r.http?.paths ?? []).map((p, j) => (
-                      <div key={j} className="mt-0.5 text-xs" style={{ color: '#5b6a80' }}>
+                      <div key={j} className="mt-0.5 text-xs" style={{ color: 'var(--ks-body)' }}>
                         <span className="kbd-mono">{p.path ?? '/'}</span> → {p.backend?.service?.name}
                         {p.backend?.service?.port?.number ? `:${p.backend.service.port.number}` : ''}
                       </div>
                     ))}
                   </div>
                 ))}
-                {!((rec(active.o, 'spec').rules as unknown[] | undefined)?.length) && <div className="text-[13px]" style={{ color: '#8f9aa9' }}>无转发规则</div>}
+                {!((rec(active.o, 'spec').rules as unknown[] | undefined)?.length) && <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>无转发规则</div>}
               </div>
             </Panel>
           </>
         ) : (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #4fd0c0, #14958a)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-teal-bg)", color: "var(--ks-teal)" }}>
                   <ThunderboltOutlined />
                 </span>
-                <span className="min-w-0 truncate text-base font-bold" style={{ color: '#15233a' }}>{active.name}</span>
+                <span className="min-w-0 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>{active.name}</span>
                 <Dropdown menu={rowMenu(active)} trigger={['click']}>
                   <Button type="text" size="small" style={{ marginLeft: 'auto' }}>⋯</Button>
                 </Dropdown>
@@ -902,14 +879,14 @@ export default function ServicesPage() {
               {epAddresses(active.o).length || epNotReady(active.o).length ? (
                 <div className="space-y-1">
                   {epAddresses(active.o).map((a) => (
-                    <div key={a} className="kbd-mono text-[13px]" style={{ color: '#15233a' }}>{a}</div>
+                    <div key={a} className="kbd-mono text-[13px]" style={{ color: 'var(--ks-ink)' }}>{a}</div>
                   ))}
                   {epNotReady(active.o).map((a) => (
-                    <div key={`nr-${a}`} className="kbd-mono text-[13px]" style={{ color: '#8f9aa9' }}>{a}（未就绪）</div>
+                    <div key={`nr-${a}`} className="kbd-mono text-[13px]" style={{ color: 'var(--ks-muted)' }}>{a}（未就绪）</div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>无地址</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>无地址</div>
               )}
             </Panel>
           </>
@@ -917,7 +894,7 @@ export default function ServicesPage() {
 
         {tab !== 'dns' && (
           <Panel title="使用小贴士">
-            <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+            <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
               {tab === 'services' && 'Service 为一组 Pod 提供稳定的集群内访问入口；NodePort 与 LoadBalancer 类型可对外暴露服务。'}
               {tab === 'ingresses' && 'Ingress 基于域名与路径将集群外流量路由到 Service，需配合 Ingress Controller 使用。'}
               {tab === 'endpoints' && 'Endpoints 由 Kubernetes 自动维护，记录 Service 选择器命中的 Pod 实际地址。'}

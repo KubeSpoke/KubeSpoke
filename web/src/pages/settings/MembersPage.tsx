@@ -32,6 +32,7 @@ import { datetime } from '../../utils/format'
 import { toYaml } from '../../utils/yaml'
 import { YamlPreview } from '../../components/YamlPreview'
 import type { ResourceDescriptor } from '../../config/nav'
+import { StatCard } from '../../components/StatCard'
 
 /** 集群成员 = ClusterRoleBinding 的 subjects；本页面不依赖用户库，全部语义来自 RBAC 对象 */
 const CLUSTER_ROLE_BINDING: ResourceDescriptor = {
@@ -142,8 +143,8 @@ function toMembers(bindings: K8sObject[]): MemberRow[] {
 function ActiveDot() {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span className="size-[7px] shrink-0 rounded-full" style={{ background: '#59c492' }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>活跃</span>
+      <span className="size-[7px] shrink-0 rounded-full" style={{ background: 'var(--color-ok)' }} />
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>活跃</span>
     </span>
   )
 }
@@ -162,7 +163,7 @@ function usePager(all: number) {
       if (ps && ps !== pageSize) setPageSize(ps)
     },
     showTotal: (total: number) => (
-      <Space size={16} className="text-xs text-[#5c6b80]">
+      <Space size={16} className="text-xs text-[var(--ks-body)]">
         <span>总数：{total}</span>
         <span className="inline-flex items-center gap-1">
           每页显示：
@@ -397,7 +398,7 @@ function AssignmentsModal({
         {member.bindings.map((b) => (
           <Checkbox key={b.binding} value={b.binding}>
             <Space size={6}>
-              <SafetyCertificateOutlined className="text-[#8f9aa9]" />
+              <SafetyCertificateOutlined className="text-[var(--ks-muted)]" />
               <span>{b.role}</span>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 （{b.binding}）
@@ -411,19 +412,19 @@ function AssignmentsModal({
 }
 
 /** tone token：与节点管理页同款 */
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 const pctOf = (n: number, total: number) => (total ? `${Math.round((n / total) * 100)}%` : '0%')
 
 /** 右侧竖排面板（与节点管理页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -431,35 +432,8 @@ function Panel({ title, extra, children }: { title: string; extra?: ReactNode; c
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, pct, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; pct: string; color: string; bg: string; icon: ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>{pct}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -550,26 +524,26 @@ export default function MembersPage() {
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅 */}
         <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <TeamOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>集群成员</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>集群成员</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 当前集群：{cluster || '未选择'}。成员来自集群角色绑定的 subjects（用户 / 组 / 服务帐户），角色即其被授予的 ClusterRole。
               </div>
             </div>
@@ -581,16 +555,16 @@ export default function MembersPage() {
 
         {/* 统计卡 */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="成员总数" value={all.length} total={all.length} pct="100%" color="#2f6fed" bg="#e8f1ff" icon={<TeamOutlined />} active={!kindFilter} onClick={() => setKindFilter(undefined)} />
-          <StatCard label="用户" value={counts.user} total={all.length} pct={pctOf(counts.user, all.length)} color="#27a06a" bg="#e6f7ef" icon={<UserAddOutlined />} active={kindFilter === 'User'} onClick={() => setKindFilter(kindFilter === 'User' ? undefined : 'User')} />
-          <StatCard label="组" value={counts.group} total={all.length} pct={pctOf(counts.group, all.length)} color="#7c5cff" bg="#f0ebff" icon={<TeamOutlined />} active={kindFilter === 'Group'} onClick={() => setKindFilter(kindFilter === 'Group' ? undefined : 'Group')} />
-          <StatCard label="服务帐户" value={counts.sa} total={all.length} pct={pctOf(counts.sa, all.length)} color="#f5a623" bg="#fff4e5" icon={<SafetyCertificateOutlined />} active={kindFilter === 'ServiceAccount'} onClick={() => setKindFilter(kindFilter === 'ServiceAccount' ? undefined : 'ServiceAccount')} />
+          <StatCard label="成员总数" value={all.length} total={all.length} pct="100%" color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<TeamOutlined />} active={!kindFilter} onClick={() => setKindFilter(undefined)} />
+          <StatCard label="用户" value={counts.user} total={all.length} pct={pctOf(counts.user, all.length)} color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<UserAddOutlined />} active={kindFilter === 'User'} onClick={() => setKindFilter(kindFilter === 'User' ? undefined : 'User')} />
+          <StatCard label="组" value={counts.group} total={all.length} pct={pctOf(counts.group, all.length)} color="var(--ks-violet)" bg="var(--ks-violet-bg)" icon={<TeamOutlined />} active={kindFilter === 'Group'} onClick={() => setKindFilter(kindFilter === 'Group' ? undefined : 'Group')} />
+          <StatCard label="服务帐户" value={counts.sa} total={all.length} pct={pctOf(counts.sa, all.length)} color="var(--color-warn)" bg="var(--ks-warn-bg)" icon={<SafetyCertificateOutlined />} active={kindFilter === 'ServiceAccount'} onClick={() => setKindFilter(kindFilter === 'ServiceAccount' ? undefined : 'ServiceAccount')} />
         </div>
 
         {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>类型</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>类型</span>
             <Select allowClear placeholder="全部" style={{ width: 120 }} value={kindFilter} onChange={setKindFilter} suffixIcon={null} variant="filled"
               options={[{ label: '用户', value: 'User' }, { label: '组', value: 'Group' }, { label: '服务帐户', value: 'ServiceAccount' }]} />
             <span className="ml-auto flex items-center gap-2">
@@ -620,12 +594,12 @@ export default function MembersPage() {
                 width: 200,
                 render: (_, m) => (
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-md text-base" style={{ background: '#e8f1ff', color: '#2f6fed' }}>
+                    <span className="grid size-8 shrink-0 place-items-center rounded-md text-base" style={{ background: 'var(--ks-brand-bg)', color: 'var(--color-brand)' }}>
                       <TeamOutlined />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium" style={{ color: '#15233a' }} title={m.name}>{m.name}</div>
-                      <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{kindLabel(m)}</div>
+                      <div className="truncate font-medium" style={{ color: 'var(--ks-ink)' }} title={m.name}>{m.name}</div>
+                      <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{kindLabel(m)}</div>
                     </div>
                   </div>
                 ),
@@ -635,11 +609,11 @@ export default function MembersPage() {
                 width: 110,
                 render: (_, m) => {
                   const map: Record<string, { color: string; bg: string }> = {
-                    User: { color: '#27a06a', bg: '#e6f7ef' },
-                    Group: { color: '#7c5cff', bg: '#f0ebff' },
-                    ServiceAccount: { color: '#f5a623', bg: '#fff4e5' },
+                    User: { color: 'var(--ks-ok-text)', bg: 'var(--ks-ok-bg)' },
+                    Group: { color: 'var(--ks-violet)', bg: 'var(--ks-violet-bg)' },
+                    ServiceAccount: { color: 'var(--color-warn)', bg: 'var(--ks-warn-bg)' },
                   }
-                  const s = map[m.kind] ?? { color: '#5b6a80', bg: '#eef1f5' }
+                  const s = map[m.kind] ?? { color: 'var(--ks-body)', bg: 'var(--ks-fill)' }
                   return (
                     <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: s.bg, color: s.color }}>
                       {KIND_LABEL[m.kind] ?? m.kind}
@@ -681,13 +655,13 @@ export default function MembersPage() {
       <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
         {active ? (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <TeamOutlined />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: '#15233a' }} title={active.name}>{active.name}</span>
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: '#e6f7ef', color: '#27a06a' }}>
+                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }} title={active.name}>{active.name}</span>
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: 'var(--ks-ok-bg)', color: 'var(--ks-ok-text)' }}>
                   <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR.ok }} />
                   活跃
                 </span>
@@ -706,26 +680,26 @@ export default function MembersPage() {
                     const b = active.bindings.find((x) => x.role === r)
                     return (
                       <div key={r} className="flex items-center gap-2 text-[13px]">
-                        <SafetyCertificateOutlined className="shrink-0" style={{ color: '#8f9aa9' }} />
-                        <span className="kbd-mono min-w-0 flex-1 truncate" style={{ color: '#15233a' }}>{r}</span>
-                        {b && <span className="shrink-0 text-xs" style={{ color: '#8f9aa9' }}>{datetime(b.createdAt)}</span>}
+                        <SafetyCertificateOutlined className="shrink-0" style={{ color: 'var(--ks-muted)' }} />
+                        <span className="kbd-mono min-w-0 flex-1 truncate" style={{ color: 'var(--ks-ink)' }}>{r}</span>
+                        {b && <span className="shrink-0 text-xs" style={{ color: 'var(--ks-muted)' }}>{datetime(b.createdAt)}</span>}
                       </div>
                     )
                   })}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>该成员暂无角色。</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>该成员暂无角色。</div>
               )}
             </Panel>
           </>
         ) : (
-          <div className="rounded-lg bg-white px-4 py-6 text-center text-[13px]" style={{ border: '1px solid #e6ebf1', color: '#8f9aa9' }}>
+          <div className="ks-panel px-4 py-6 text-center text-[13px]" style={{ color: 'var(--ks-muted)' }}>
             {all.length ? '点击左侧成员行查看详情。' : '当前集群还没有成员。'}
           </div>
         )}
 
         <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+          <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
             集群成员来自 ClusterRoleBinding 的 subjects，一个成员可持有多个角色。「编辑角色」通过勾选保留 / 移除绑定；移除后其集群权限立即失效。K8s 无登录态数据，状态统一显示为「活跃」。
           </div>
         </Panel>

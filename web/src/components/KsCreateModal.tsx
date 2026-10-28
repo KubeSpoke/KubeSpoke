@@ -63,18 +63,18 @@ export function KsCreateModal({
       onCancel={close}
     >
       {/* 头部 */}
-      <div className="flex items-center justify-between border-b border-[#ebeef2] px-6" style={{ height: 56 }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: '#222b45' }}>{title}</span>
+      <div className="flex items-center justify-between px-7" style={{ height: 56 }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ks-ink)' }}>{title}</span>
         <div className="flex items-center gap-4">
           {showYamlToggle && (
-            <span className="inline-flex items-center gap-2 text-[13px] text-[#454f5c]">
+            <span className="inline-flex items-center gap-2 text-[13px] text-[var(--ks-body)]">
               编辑 YAML
               <Switch size="small" checked={yamlOn} onChange={(v) => onYamlToggle?.(v)} />
             </span>
           )}
           <button
             onClick={close}
-            className="grid size-7 place-items-center rounded text-[#8f9aa9]! transition-colors hover:bg-[#f4f6fa] hover:text-[#222b45]!"
+            className="grid size-7 place-items-center rounded text-[var(--ks-muted)]! transition-colors hover:bg-[var(--ks-fill)] hover:text-[var(--ks-ink)]!"
             aria-label="关闭"
           >
             <CloseOutlined style={{ fontSize: 13 }} />
@@ -84,7 +84,7 @@ export function KsCreateModal({
 
       {/* 步骤条 */}
       {wizard && (
-        <div className="flex items-center gap-10 border-b border-[#ebeef2] bg-[#eef4f8] px-6 py-3">
+        <div className="flex items-center gap-10 bg-[var(--ks-fill-soft)] px-7 py-3">
           {steps!.map((s, i) => {
             const done = i < current!
             const active = i === current!
@@ -99,11 +99,11 @@ export function KsCreateModal({
               >
                 <span
                   className="grid size-5 place-items-center rounded-full text-[12px] font-medium text-white"
-                  style={{ background: done || active ? '#2f6fed' : '#b6bfcc' }}
+                  style={{ background: done || active ? 'var(--color-brand)' : 'var(--ks-faint)' }}
                 >
                   {i + 1}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? '#222b45' : done ? '#2f6fed' : '#7a8798' }}>
+                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? 'var(--ks-ink)' : done ? 'var(--color-brand)' : 'var(--ks-muted)' }}>
                   {s}
                 </span>
               </button>
@@ -116,7 +116,7 @@ export function KsCreateModal({
       <div className="max-h-[62vh] overflow-auto px-8 py-6">{children}</div>
 
       {/* 页脚 */}
-      <div className="flex items-center justify-end gap-3 border-t border-[#ebeef2] px-6" style={{ height: 64 }}>
+      <div className="flex items-center justify-end gap-3 px-7" style={{ height: 64 }}>
         <Button onClick={close} style={{ borderRadius: 6, height: 34, paddingInline: 22 }}>
           取消
         </Button>

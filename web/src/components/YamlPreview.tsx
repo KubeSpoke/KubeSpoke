@@ -19,7 +19,7 @@ export function YamlPreview({ value, label = '提交内容预览', maxHeight = 2
           label,
           children: (
             <pre
-              className="kbd-mono m-0 overflow-auto rounded bg-slate-50 p-3 text-xs"
+              className="kbd-mono m-0 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs"
               style={{ maxHeight }}
             >
               {toYaml(value)}

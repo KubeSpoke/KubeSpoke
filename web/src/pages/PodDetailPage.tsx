@@ -21,8 +21,8 @@ import type { ResourceDescriptor } from '../config/nav'
 
 const PODS: ResourceDescriptor = { key: 'pods', label: '容器组', kind: 'Pod', group: '', version: 'v1', plural: 'pods', scope: 'Namespaced', statusKind: 'phase' }
 
-const labelStyle = { fontSize: 12, color: '#79879c' }
-const valueStyle = { fontSize: 13, fontWeight: 500, color: '#15233a' }
+const labelStyle = { fontSize: 12, color: 'var(--ks-muted)' }
+const valueStyle = { fontSize: 13, fontWeight: 500, color: 'var(--ks-ink)' }
 const ANNO_CREATOR = 'kubesphere.io/creator'
 
 const STATUS_CN: Record<string, string> = {
@@ -35,19 +35,19 @@ const STATUS_CN: Record<string, string> = {
   Active: '活跃',
 }
 const STATUS_COLOR: Record<string, string> = {
-  Running: '#3ca96a',
-  Succeeded: '#3ca96a',
-  Bound: '#3ca96a',
-  Active: '#3ca96a',
-  Ready: '#3ca96a',
-  Pending: '#f5a623',
-  ContainerCreating: '#f5a623',
-  Terminating: '#f5a623',
-  Unknown: '#9aa7b8',
-  Failed: '#ca2621',
-  CrashLoopBackOff: '#ca2621',
-  Error: '#ca2621',
-  ImagePullBackOff: '#ca2621',
+  Running: 'var(--ks-ok-text)',
+  Succeeded: 'var(--ks-ok-text)',
+  Bound: 'var(--ks-ok-text)',
+  Active: 'var(--ks-ok-text)',
+  Ready: 'var(--ks-ok-text)',
+  Pending: 'var(--color-warn)',
+  ContainerCreating: 'var(--color-warn)',
+  Terminating: 'var(--color-warn)',
+  Unknown: 'var(--ks-muted)',
+  Failed: 'var(--ks-danger-text)',
+  CrashLoopBackOff: 'var(--ks-danger-text)',
+  Error: 'var(--ks-danger-text)',
+  ImagePullBackOff: 'var(--ks-danger-text)',
 }
 
 const cnStatus = (v?: string) => (v ? STATUS_CN[v] ?? v : '-')
@@ -60,13 +60,13 @@ const numv = (v: unknown): number | undefined => (typeof v === 'number' ? v : un
 
 function StatusText({ phase }: { phase?: string }) {
   if (!phase) return <span style={valueStyle}>-</span>
-  return <span style={{ ...valueStyle, color: STATUS_COLOR[phase] ?? '#36435c' }}>{cnStatus(phase)}</span>
+  return <span style={{ ...valueStyle, color: STATUS_COLOR[phase] ?? 'var(--ks-body)' }}>{cnStatus(phase)}</span>
 }
 
 function Attrs({ items }: { items: { label: string; value: ReactNode }[] }) {
   return (
     <div className="flex flex-wrap items-start gap-x-10 gap-y-3">
-      <span className="mt-0.5 inline-flex items-center rounded bg-[#eef1f5] px-2 py-1 text-xs font-medium text-[#5b6b80]">容器组</span>
+      <span className="mt-0.5 inline-flex items-center rounded bg-[var(--ks-fill)] px-2 py-1 text-xs font-medium text-[var(--ks-body)]">容器组</span>
       {items.map((it) => (
         <div key={it.label} className="min-w-[92px]">
           <div style={labelStyle}>{it.label}</div>
@@ -465,7 +465,7 @@ export function PodDetailBody({
       </Modal>
 
       <Modal open={viewOpen} title={`查看 YAML · ${pod}`} width={720} onCancel={() => setViewOpen(false)} footer={<Button onClick={() => setViewOpen(false)}>关闭</Button>}>
-        <pre className="kbd-mono m-0 max-h-[60vh] overflow-auto rounded bg-slate-50 p-3 text-xs">{toYaml(data ?? {})}</pre>
+        <pre className="kbd-mono m-0 max-h-[60vh] overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{toYaml(data ?? {})}</pre>
       </Modal>
     </>
   )
@@ -571,7 +571,7 @@ function ContainerCard({
       className="mb-4"
       title={
         <Space size={8}>
-          <ContainerOutlined className="text-[#5c6b80]" />
+          <ContainerOutlined className="text-[var(--ks-body)]" />
           <span className="font-medium">{cname}</span>
           <Tag variant="filled">{kindLabel}</Tag>
         </Space>

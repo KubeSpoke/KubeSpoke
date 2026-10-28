@@ -23,8 +23,8 @@ import { datetime, memory } from '../utils/format'
 
 /* ------------------------------------------------------------------ 常量与工具 */
 
-const labelStyle = { fontSize: 12, color: '#79879c' }
-const valueStyle = { fontSize: 13, fontWeight: 500, color: '#15233a' }
+const labelStyle = { fontSize: 12, color: 'var(--ks-muted)' }
+const valueStyle = { fontSize: 13, fontWeight: 500, color: 'var(--ks-ink)' }
 
 const ANNO_ALIAS = 'kubesphere.io/alias-name'
 const ANNO_DESC = 'kubesphere.io/description'
@@ -52,27 +52,27 @@ const STATUS_CN: Record<string, string> = {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  Running: '#3ca96a',
-  Succeeded: '#3ca96a',
-  Completed: '#3ca96a',
-  Complete: '#3ca96a',
-  Bound: '#3ca96a',
-  Active: '#3ca96a',
-  Ready: '#3ca96a',
-  Available: '#3ca96a',
-  Pending: '#f5a623',
-  NotReady: '#f5a623',
-  Terminating: '#f5a623',
-  Updating: '#f5a623',
-  Failed: '#ca2621',
-  Released: '#ca2621',
-  Unbound: '#ca2621',
-  CrashLoopBackOff: '#ca2621',
-  Error: '#ca2621',
-  Unknown: '#9aa7b8',
+  Running: 'var(--ks-ok-text)',
+  Succeeded: 'var(--ks-ok-text)',
+  Completed: 'var(--ks-ok-text)',
+  Complete: 'var(--ks-ok-text)',
+  Bound: 'var(--ks-ok-text)',
+  Active: 'var(--ks-ok-text)',
+  Ready: 'var(--ks-ok-text)',
+  Available: 'var(--ks-ok-text)',
+  Pending: 'var(--color-warn)',
+  NotReady: 'var(--color-warn)',
+  Terminating: 'var(--color-warn)',
+  Updating: 'var(--color-warn)',
+  Failed: 'var(--ks-danger-text)',
+  Released: 'var(--ks-danger-text)',
+  Unbound: 'var(--ks-danger-text)',
+  CrashLoopBackOff: 'var(--ks-danger-text)',
+  Error: 'var(--ks-danger-text)',
+  Unknown: 'var(--ks-muted)',
 }
 
-const TONE_COLOR: Record<string, string> = { ok: '#3ca96a', warn: '#f5a623', danger: '#ca2621', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--ks-ok-text)', warn: 'var(--color-warn)', danger: 'var(--ks-danger-text)', muted: 'var(--ks-muted)' }
 
 const cnStatus = (v?: string) => (v ? STATUS_CN[v] ?? v : '-')
 
@@ -190,7 +190,7 @@ function crDescriptor(data?: K8sObject): ResourceDescriptor | undefined {
 
 function StatusText({ phase }: { phase?: string }) {
   if (!phase) return <span style={valueStyle}>-</span>
-  return <span style={{ ...valueStyle, color: STATUS_COLOR[phase] ?? '#36435c' }}>{cnStatus(phase)}</span>
+  return <span style={{ ...valueStyle, color: STATUS_COLOR[phase] ?? 'var(--ks-body)' }}>{cnStatus(phase)}</span>
 }
 
 function DerivedText({ d, o }: { d: ResourceDescriptor; o: K8sObject }) {
@@ -233,7 +233,7 @@ function LabelTable({ data, empty }: { data?: Record<string, string>; empty: str
 function AttrStrip({ typeLabel, items }: { typeLabel: string; items: { label: string; value: ReactNode }[] }) {
   return (
     <div className="flex flex-wrap items-start gap-x-10 gap-y-3">
-      <span className="mt-0.5 inline-flex items-center rounded bg-[#eef1f5] px-2 py-1 text-xs font-medium text-[#5b6b80]">
+      <span className="mt-0.5 inline-flex items-center rounded bg-[var(--ks-fill)] px-2 py-1 text-xs font-medium text-[var(--ks-body)]">
         {typeLabel}
       </span>
       {items.map((it) => (
@@ -923,14 +923,14 @@ export function ResourceDetailBody({
               locale={{ emptyText: '没有数据' }}
               expandable={{
                 rowExpandable: (r) => r.value.includes('\n'),
-                expandedRowRender: (r) => <pre className="kbd-mono m-0 max-h-72 overflow-auto rounded bg-slate-50 p-3 text-xs">{r.value}</pre>,
+                expandedRowRender: (r) => <pre className="kbd-mono m-0 max-h-72 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{r.value}</pre>,
               }}
               columns={[
                 { title: '名称', dataIndex: 'name', width: 260, render: (v: string) => <Tag>{v}</Tag> },
                 {
                   title: '值',
                   dataIndex: 'value',
-                  render: (v: string) => (v.includes('\n') ? <span className="text-xs text-[#8f9aa9]">{v.split('\n').length} 行（点击左侧展开）</span> : <span className="kbd-mono text-xs">{v}</span>),
+                  render: (v: string) => (v.includes('\n') ? <span className="text-xs text-[var(--ks-muted)]">{v.split('\n').length} 行（点击左侧展开）</span> : <span className="kbd-mono text-xs">{v}</span>),
                 },
               ]}
             />
@@ -1079,7 +1079,7 @@ export function ResourceDetailBody({
         {flat('状态', statusEntries)}
         {d.key === 'workloadtemplates' && (
           <Section title="模板">
-            <pre className="kbd-mono m-0 max-h-96 overflow-auto rounded bg-slate-50 p-3 text-xs">{toYaml(sp)}</pre>
+            <pre className="kbd-mono m-0 max-h-96 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{toYaml(sp)}</pre>
           </Section>
         )}
       </>
@@ -1192,7 +1192,7 @@ export function ResourceDetailBody({
     label: 'YAML',
     children: (
       <div className="p-5">
-        <pre className="kbd-mono m-0 overflow-auto rounded bg-slate-50 p-3 text-xs" style={{ maxHeight: 520 }}>
+        <pre className="kbd-mono m-0 overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs" style={{ maxHeight: 520 }}>
           {toYaml(data ?? {})}
         </pre>
       </div>
@@ -1269,7 +1269,7 @@ export function ResourceDetailBody({
       </Modal>
 
       <Modal open={viewOpen} title={`查看 YAML · ${decoded}`} width={720} onCancel={() => setViewOpen(false)} footer={<Button onClick={() => setViewOpen(false)}>关闭</Button>}>
-        <pre className="kbd-mono m-0 max-h-[60vh] overflow-auto rounded bg-slate-50 p-3 text-xs">{toYaml(data ?? {})}</pre>
+        <pre className="kbd-mono m-0 max-h-[60vh] overflow-auto rounded bg-[var(--ks-fill-soft)] p-3 text-xs">{toYaml(data ?? {})}</pre>
       </Modal>
     </>
   )

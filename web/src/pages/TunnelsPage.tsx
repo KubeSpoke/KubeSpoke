@@ -206,7 +206,7 @@ export default function TunnelsPage() {
             title: 'FastTunnel 服务端',
             width: 200,
             render: (_, r) => (
-              <span className="kbd-mono text-xs" style={{ color: '#5b6a80' }}>
+              <span className="kbd-mono text-xs" style={{ color: 'var(--ks-body)' }}>
                 {r.serverAddr}:{r.serverPort}
                 {r.hasToken ? ' · token' : ''}
               </span>
@@ -217,11 +217,11 @@ export default function TunnelsPage() {
             title: 'Web 穿透 (HTTP)',
             render: (_, r) =>
               r.webs.length === 0 ? (
-                <span className="text-xs" style={{ color: '#c2cbd8' }}>—</span>
+                <span className="text-xs" style={{ color: 'var(--ks-faint)' }}>—</span>
               ) : (
                 <div className="flex flex-col gap-0.5">
                   {r.webs.map((w, i) => (
-                    <span key={i} className="kbd-mono text-xs" style={{ color: '#5b6a80' }}>
+                    <span key={i} className="kbd-mono text-xs" style={{ color: 'var(--ks-body)' }}>
                       {w.subDomain}.{r.serverAddr}:{r.serverPort} ⇒ {w.localIp}:{w.localPort}
                     </span>
                   ))}
@@ -233,11 +233,11 @@ export default function TunnelsPage() {
             title: '端口转发 (TCP/UDP)',
             render: (_, r) =>
               r.forwards.length === 0 ? (
-                <span className="text-xs" style={{ color: '#c2cbd8' }}>—</span>
+                <span className="text-xs" style={{ color: 'var(--ks-faint)' }}>—</span>
               ) : (
                 <div className="flex flex-col gap-0.5">
                   {r.forwards.map((f, i) => (
-                    <span key={i} className="kbd-mono text-xs" style={{ color: '#5b6a80' }}>
+                    <span key={i} className="kbd-mono text-xs" style={{ color: 'var(--ks-body)' }}>
                       {r.serverAddr}:{f.remotePort} ⇒ {f.localIp}:{f.localPort}
                       {f.protocol && f.protocol !== 'TCP' ? ` (${f.protocol})` : ''}
                     </span>
@@ -251,7 +251,7 @@ export default function TunnelsPage() {
             width: 150,
             render: (_, r) => (
               <Tooltip title={r.createdBy ? `创建人 ${r.createdBy}` : undefined}>
-                <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>
+                <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>
                   {datetime(r.createdAt)}
                 </span>
               </Tooltip>

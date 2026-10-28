@@ -51,15 +51,15 @@ interface KindMeta {
 }
 
 const KINDS: KindMeta[] = [
-  { d: DEPLOYMENTS, short: 'Deployment', icon: <DeploymentUnitOutlined />, color: '#2f6fed', bg: '#e8f1ff' },
-  { d: resourceDescriptors.statefulsets, short: 'StatefulSet', icon: <BlockOutlined />, color: '#27a06a', bg: '#e6f7ef' },
-  { d: resourceDescriptors.daemonsets, short: 'DaemonSet', icon: <RetweetOutlined />, color: '#7c5cff', bg: '#f0ebff' },
-  { d: resourceDescriptors.jobs, short: 'Job', icon: <ThunderboltOutlined />, color: '#d98a12', bg: '#fff4e0' },
-  { d: resourceDescriptors.cronjobs, short: 'CronJob', icon: <ClockCircleOutlined />, color: '#1fa79a', bg: '#e2f7f5' },
+  { d: DEPLOYMENTS, short: 'Deployment', icon: <DeploymentUnitOutlined />, color: 'var(--color-brand)', bg: 'var(--ks-brand-bg)' },
+  { d: resourceDescriptors.statefulsets, short: 'StatefulSet', icon: <BlockOutlined />, color: 'var(--ks-ok-text)', bg: 'var(--ks-ok-bg)' },
+  { d: resourceDescriptors.daemonsets, short: 'DaemonSet', icon: <RetweetOutlined />, color: 'var(--ks-violet)', bg: 'var(--ks-violet-bg)' },
+  { d: resourceDescriptors.jobs, short: 'Job', icon: <ThunderboltOutlined />, color: 'var(--ks-warn-text)', bg: 'var(--ks-warn-bg)' },
+  { d: resourceDescriptors.cronjobs, short: 'CronJob', icon: <ClockCircleOutlined />, color: 'var(--ks-teal)', bg: 'var(--ks-teal-bg)' },
 ]
 const KIND_BY_KEY = Object.fromEntries(KINDS.map((k) => [k.d.key, k])) as Record<string, KindMeta>
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 const num = (v: unknown) => Number(v ?? 0)
 const rec = (o: K8sObject, k: 'spec' | 'status') => ((o[k] ?? {}) as Record<string, unknown>)
@@ -462,26 +462,26 @@ export default function WorkloadsPage() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
           {error} <Button size="small" onClick={refresh}>重试</Button>
         </div>
       )}
 
       {/* 页头横幅 */}
       <div
-        className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-        style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+        className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
       >
         <div className="flex items-center gap-4">
           <span
             className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-            style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+            style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
           >
             <DeploymentUnitOutlined />
           </span>
           <div>
-            <div className="text-xl font-bold" style={{ color: '#15233a' }}>工作负载</div>
-            <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+            <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>工作负载</div>
+            <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
               管理集群中的各类工作负载，包括 Deployment、StatefulSet、DaemonSet、Job 等。
             </div>
           </div>
@@ -507,8 +507,8 @@ export default function WorkloadsPage() {
           return (
             <div
               key={k.d.key}
-              className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-              style={{ border: `1px solid ${tab === k.d.key ? k.color : '#e6ebf1'}` }}
+              className="flex cursor-pointer items-center justify-between ks-panel ks-panel-hover px-4 py-3"
+              style={tab === k.d.key ? { background: `${k.color}0f` } : undefined}
               onClick={() => { setTab(k.d.key); setSelected([]) }}
             >
               <div className="flex items-center gap-3">
@@ -516,24 +516,24 @@ export default function WorkloadsPage() {
                   {k.icon}
                 </span>
                 <div>
-                  <div className="text-xs" style={{ color: '#8f9aa9' }}>{k.short}</div>
-                  <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
+                  <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>{k.short}</div>
+                  <div className="text-xl font-bold leading-6" style={{ color: 'var(--ks-ink)' }}>
                     {c.total}
-                    <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>就绪 {c.ready}</span>
+                    <span className="ml-1 text-xs font-normal" style={{ color: 'var(--ks-muted)' }}>就绪 {c.ready}</span>
                   </div>
                 </div>
               </div>
-              <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
+              <RightOutlined style={{ color: 'var(--ks-faint)', fontSize: 12 }} />
             </div>
           )
         })}
       </div>
 
       {/* 表格卡片 */}
-      <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+      <div className="ks-panel">
         <div className="flex flex-wrap items-center gap-3 px-4 py-3">
           <Dropdown menu={{ items: createItems, onClick: ({ key }) => setCreateKind(String(key)) }}>
-            <Button type="primary" style={{ background: 'linear-gradient(90deg, #3f8cff, #1f5fe0)', borderColor: '#1f5fe0' }}>
+            <Button type="primary" >
               创建工作负载 <DownOutlined />
             </Button>
           </Dropdown>
@@ -599,10 +599,10 @@ export default function WorkloadsPage() {
                       {k.icon}
                     </span>
                     <div className="min-w-0">
-                      <a className="truncate font-medium" style={{ color: '#15233a' }} onClick={() => openDetail(r)}>
+                      <a className="truncate font-medium" style={{ color: 'var(--ks-ink)' }} onClick={() => openDetail(r)}>
                         {r.name}
                       </a>
-                      <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
+                      <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{annotation(r.o, ALIAS_KEY) || '-'}</div>
                     </div>
                   </div>
                 )
@@ -649,7 +649,7 @@ export default function WorkloadsPage() {
                 return (
                   <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     <span className="size-[7px] shrink-0 rounded-full" style={{ background: TONE_COLOR[s.tone] }} />
-                    <span style={{ color: '#15233a' }}>{s.text}</span>
+                    <span style={{ color: 'var(--ks-ink)' }}>{s.text}</span>
                   </span>
                 )
               },
@@ -658,7 +658,7 @@ export default function WorkloadsPage() {
               title: '创建时间',
               width: 160,
               sorter: (a, b) => (a.o.metadata?.creationTimestamp ?? '').localeCompare(b.o.metadata?.creationTimestamp ?? ''),
-              render: (_, r) => <span className="text-xs" style={{ color: '#5b6a80' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
+              render: (_, r) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{datetime(r.o.metadata?.creationTimestamp)}</span>,
             },
             {
               title: '操作',

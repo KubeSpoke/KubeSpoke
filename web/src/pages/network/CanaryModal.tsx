@@ -121,7 +121,7 @@ export default function CanaryModal({ open, onClose, cluster, namespace, name, o
         {existing ? (
           <div className="mt-3 space-y-4">
             <div className="text-[13px]">
-              <span style={{ color: '#8f9aa9' }}>灰度镜像：</span>
+              <span style={{ color: 'var(--ks-muted)' }}>灰度镜像：</span>
               <span className="kbd-mono">{data?.image || '-'}</span>
             </div>
             <div>

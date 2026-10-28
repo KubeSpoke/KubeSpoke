@@ -28,3 +28,10 @@ admin.conf
 .kubeconfig
 .env
 .env.*
+
+# 本地工作记忆与验收截图（含临时 attempts），与源码无关
+/.workbuddy/
+
+# 联调时从接口 dump 下来的样例数据
+/rel.json
+/tpl.json

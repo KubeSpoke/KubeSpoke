@@ -103,7 +103,7 @@ export default function RecycleBinPage() {
             已还原
           </Tag>
         ) : (
-          <span className="whitespace-nowrap text-xs text-[#8f9aa9]">{datetime(r.expires)} 过期</span>
+          <span className="whitespace-nowrap text-xs text-[var(--ks-muted)]">{datetime(r.expires)} 过期</span>
         ),
     },
     {

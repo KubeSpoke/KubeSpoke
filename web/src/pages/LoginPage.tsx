@@ -103,31 +103,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="flex h-screen w-full overflow-hidden"
-      style={{
-        background:
-          'radial-gradient(1200px 700px at 12% 8%, #eaf2ff 0%, rgba(234,242,255,0) 55%), radial-gradient(900px 600px at 88% 90%, #e8f8f1 0%, rgba(232,248,241,0) 50%), linear-gradient(160deg, #f7fafd 0%, #eef4fb 100%)',
-      }}
-    >
+    <div className="ks-auth-bg flex h-screen w-full overflow-hidden">
       {/* 品牌区 */}
       <div className="hidden min-h-0 min-w-0 flex-1 flex-col justify-center px-14 py-6 xl:flex 2xl:px-24">
         <div className="mb-6 flex items-center gap-4">
           <BrandMark size={56} />
           <div>
-            <div className="text-[26px] font-bold leading-tight tracking-tight" style={{ color: '#1d2b45' }}>
+            <div className="text-[26px] font-bold leading-tight tracking-tight" style={{ color: 'var(--ks-ink)' }}>
               KubeSpoke
             </div>
-            <div className="text-sm" style={{ color: '#7b8ba3' }}>
+            <div className="text-sm" style={{ color: 'var(--ks-muted)' }}>
               Multi-Cluster Kubernetes DevOps Platform
             </div>
           </div>
         </div>
 
-        <h1 className="m-0 text-[34px] font-bold leading-tight" style={{ color: '#16233c' }}>
-          连接多集群 <span style={{ color: '#9aa7ba' }}>·</span> 统一运维
+        <h1 className="m-0 text-[34px] font-bold leading-tight" style={{ color: 'var(--ks-ink)' }}>
+          连接多集群 <span style={{ color: 'var(--ks-muted)' }}>·</span> 统一运维
         </h1>
-        <p className="mt-2 text-[16px]" style={{ color: '#7f8ea6' }}>
+        <p className="mt-2 text-[16px]" style={{ color: 'var(--ks-muted)' }}>
           让 Kubernetes 管理更简单、更高效
         </p>
 
@@ -136,15 +130,15 @@ export default function LoginPage() {
             <div key={f.title} className="flex items-start gap-3">
               <span
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[18px]"
-                style={{ background: '#eaf1fe', color: '#2f6fed' }}
+                style={{ background: 'var(--ks-brand-bg)', color: 'var(--color-brand)' }}
               >
                 {f.icon}
               </span>
               <div>
-                <div className="text-[15px] font-semibold leading-6" style={{ color: '#22314c' }}>
+                <div className="text-[15px] font-semibold leading-6" style={{ color: 'var(--ks-ink)' }}>
                   {f.title}
                 </div>
-                <div className="text-xs leading-5" style={{ color: '#8b99ae' }}>
+                <div className="text-xs leading-5" style={{ color: 'var(--ks-muted)' }}>
                   {f.desc}
                 </div>
               </div>
@@ -156,7 +150,7 @@ export default function LoginPage() {
           <img src="/login-hero.svg" alt="" className="h-full w-full object-contain object-left" />
           <div
             className="absolute bottom-2 left-0 text-[22px] italic"
-            style={{ color: '#3b76e0', fontFamily: "'Segoe Script', 'Comic Sans MS', cursive" }}
+            style={{ color: 'var(--color-brand)', fontFamily: "'Segoe Script', 'Comic Sans MS', cursive" }}
           >
             One Platform, All Clusters
           </div>
@@ -165,20 +159,20 @@ export default function LoginPage() {
 
       {/* 表单区 */}
       <div className="flex min-h-0 w-full items-center justify-center px-6 py-6 xl:w-[46%] xl:max-w-[620px]">
-        <div className="w-full max-w-[420px] rounded-2xl bg-white px-8 py-7" style={{ boxShadow: '0 18px 50px rgba(23,51,96,0.12)' }}>
+        <div className="w-full max-w-[420px] ks-auth-card rounded-2xl px-8 py-7">
           <div className="mb-5 flex items-center gap-3">
             <BrandMark size={44} />
             <div>
-              <div className="text-[19px] font-bold leading-tight" style={{ color: '#1d2b45' }}>
+              <div className="text-[19px] font-bold leading-tight" style={{ color: 'var(--ks-ink)' }}>
                 KubeSpoke
               </div>
-              <div className="text-xs" style={{ color: '#8b99ae' }}>
+              <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>
                 DevOps Platform
               </div>
             </div>
           </div>
 
-          <Typography.Title level={3} style={{ margin: 0, color: '#16233c', fontWeight: 700 }}>
+          <Typography.Title level={3} style={{ margin: 0, color: 'var(--ks-ink)', fontWeight: 700 }}>
             欢迎回来
           </Typography.Title>
           <Typography.Text type="secondary" style={{ fontSize: 13 }}>
@@ -194,7 +188,7 @@ export default function LoginPage() {
             >
               <Input
                 size="large"
-                prefix={<UserOutlined style={{ color: '#a8b3c4' }} />}
+                prefix={<UserOutlined style={{ color: 'var(--ks-faint)' }} />}
                 placeholder="请输入用户名或邮箱"
                 autoComplete="username"
               />
@@ -207,7 +201,7 @@ export default function LoginPage() {
             >
               <Input.Password
                 size="large"
-                prefix={<LockOutlined style={{ color: '#a8b3c4' }} />}
+                prefix={<LockOutlined style={{ color: 'var(--ks-faint)' }} />}
                 placeholder="请输入密码"
                 autoComplete="current-password"
               />
@@ -217,7 +211,7 @@ export default function LoginPage() {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>记住我</Checkbox>
               </Form.Item>
-              <Typography.Link style={{ fontSize: 13, color: '#2f6fed' }} onClick={() => message.info('请联系管理员重置密码')}>
+              <Typography.Link style={{ fontSize: 13, color: 'var(--color-brand)' }} onClick={() => message.info('请联系管理员重置密码')}>
                 忘记密码？
               </Typography.Link>
             </div>
@@ -243,10 +237,10 @@ export default function LoginPage() {
             </Form.Item>
           </Form>
 
-          <Divider plain style={{ margin: '16px 0 12px', color: '#9aa7ba', fontSize: 12 }}>
+          <Divider plain style={{ margin: '16px 0 12px', color: 'var(--ks-muted)', fontSize: 12 }}>
             其他登录方式
           </Divider>
-          <Button block size="large" icon={<WechatOutlined style={{ color: '#2f6fed' }} />} onClick={() => message.info('企业微信登录暂未开放')}>
+          <Button block size="large" icon={<WechatOutlined style={{ color: 'var(--color-brand)' }} />} onClick={() => message.info('企业微信登录暂未开放')}>
             企业微信登录
           </Button>
         </div>

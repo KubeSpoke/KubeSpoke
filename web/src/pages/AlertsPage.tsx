@@ -278,7 +278,7 @@ export default function AlertsPage() {
             title: '集群',
             width: 110,
             render: (_, r) => (
-              <span className="block truncate" style={{ color: '#15233a' }} title={r.cluster}>
+              <span className="block truncate" style={{ color: 'var(--ks-ink)' }} title={r.cluster}>
                 {r.cluster}
               </span>
             ),
@@ -299,7 +299,7 @@ export default function AlertsPage() {
             title: '原因',
             width: 130,
             render: (_, r) => (
-              <span className="block truncate" style={{ color: '#15233a' }} title={r.reason}>
+              <span className="block truncate" style={{ color: 'var(--ks-ink)' }} title={r.reason}>
                 {r.reason || '-'}
               </span>
             ),
@@ -310,7 +310,7 @@ export default function AlertsPage() {
             ellipsis: true,
             render: (_, r) => (
               <Tooltip title={r.message} placement="topLeft">
-                <span className="block truncate text-xs" style={{ color: '#5b6a80' }}>
+                <span className="block truncate text-xs" style={{ color: 'var(--ks-body)' }}>
                   {r.message || '-'}
                 </span>
               </Tooltip>
@@ -322,7 +322,7 @@ export default function AlertsPage() {
             title: '最近发生',
             width: 150,
             render: (_, r) => (
-              <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>
+              <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>
                 {datetime(r.lastSeen)}
               </span>
             ),
@@ -376,7 +376,7 @@ export default function AlertsPage() {
                   </Dropdown>
                 </Space>
               ) : (
-                <span className="text-xs" style={{ color: '#c2cbd8' }}>
+                <span className="text-xs" style={{ color: 'var(--ks-faint)' }}>
                   —
                 </span>
               ),
@@ -404,7 +404,7 @@ export default function AlertsPage() {
         <div className="mt-4 flex flex-col gap-1">
           {(channelList.data?.items ?? []).map((c) => (
             <div key={c.id} className="flex items-center gap-2">
-              <span className="min-w-0 flex-1 truncate" style={{ color: '#15233a' }} title={c.url}>
+              <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--ks-ink)' }} title={c.url}>
                 {c.url}
               </span>
               <Button
@@ -465,7 +465,7 @@ export default function AlertsPage() {
               title: '时间',
               width: 155,
               render: (_, l) => (
-                <span className="whitespace-nowrap text-xs" style={{ color: '#5b6a80' }}>
+                <span className="whitespace-nowrap text-xs" style={{ color: 'var(--ks-body)' }}>
                   {datetime(l.time)}
                 </span>
               ),

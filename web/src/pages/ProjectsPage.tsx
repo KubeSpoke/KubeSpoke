@@ -38,6 +38,7 @@ import { useClusterStore } from '../store/useClusterStore'
 import { datetime } from '../utils/format'
 import { toYaml } from '../utils/yaml'
 import type { V1Event } from '../types/k8s'
+import { StatCard } from '../components/StatCard'
 
 /** 项目 = Namespace。这里用通用资源接口取完整对象，才能拿到 annotations */
 const NAMESPACE: ResourceDescriptor = {
@@ -77,9 +78,9 @@ function asObject(res: K8sObject | K8sObject[] | undefined, name: string): K8sOb
 }
 
 const PHASE_TEXT: Record<string, string> = { Active: '活跃', Terminating: '终止中' }
-const PHASE_COLOR: Record<string, string> = { Active: '#59c492', Terminating: '#f5a623' }
+const PHASE_COLOR: Record<string, string> = { Active: 'var(--color-ok)', Terminating: 'var(--color-warn)' }
 
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 /** 设计稿口径的项目状态：文案 + 语义色（与统计卡、右侧胶囊共用） */
 function projectUiStatus(phase: string): { text: string; tone: 'ok' | 'warn' | 'danger' | 'muted' } {
@@ -91,8 +92,8 @@ function projectUiStatus(phase: string): { text: string; tone: 'ok' | 'warn' | '
 function ProjectStatus({ phase }: { phase: string }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span className="size-[7px] shrink-0 rounded-full" style={{ background: PHASE_COLOR[phase] ?? '#9aa7b8' }} />
-      <span style={{ fontWeight: 500, color: '#15233a' }}>{PHASE_TEXT[phase] ?? phase}</span>
+      <span className="size-[7px] shrink-0 rounded-full" style={{ background: PHASE_COLOR[phase] ?? 'var(--ks-muted)' }} />
+      <span style={{ fontWeight: 500, color: 'var(--ks-ink)' }}>{PHASE_TEXT[phase] ?? phase}</span>
     </span>
   )
 }
@@ -116,12 +117,12 @@ interface FormValues {
 /** 右侧竖排面板（与节点/工作负载页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -129,35 +130,8 @@ function Panel({ title, extra, children }: { title: string; extra?: ReactNode; c
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, pct, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; pct: string; color: string; bg: string; icon: ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>{pct}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -234,9 +208,9 @@ export default function ProjectsPage() {
 
   const overview = usage.data
     ? [
-        { label: '容器组', value: usage.data.pods, color: '#2f6fed' },
-        { label: '部署', value: usage.data.deployments, color: '#59c492' },
-        { label: '服务', value: usage.data.services, color: '#7c5cff' },
+        { label: '容器组', value: usage.data.pods, color: 'var(--color-brand)' },
+        { label: '部署', value: usage.data.deployments, color: 'var(--color-ok)' },
+        { label: '服务', value: usage.data.services, color: 'var(--ks-violet)' },
       ]
     : null
   const overviewMax = overview ? Math.max(...overview.map((i) => i.value), 1) : 1
@@ -292,7 +266,7 @@ export default function ProjectsPage() {
 
   if (!all.length && !loading) {
     return (
-      <div className="rounded-lg bg-white p-10 text-center" style={{ border: '1px solid #e6ebf1', color: '#8f9aa9' }}>
+      <div className="ks-panel p-10 text-center" style={{ color: 'var(--ks-muted)' }}>
         当前集群没有可读取的项目。
         <Button size="small" className="ml-3" onClick={refresh} loading={loading}>刷新</Button>
       </div>
@@ -318,26 +292,26 @@ export default function ProjectsPage() {
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅 */}
         <div
-          className="relative flex items-center justify-between gap-4 overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between gap-4 overflow-hidden px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <ApartmentOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>项目</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>项目</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 当前集群：{cluster || '未选择'}。项目（命名空间）是集群内资源的隔离边界，一个项目下的资源互不可见。
               </div>
             </div>
@@ -359,40 +333,40 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             label="项目总数" value={all.length} total={all.length} pct="100%"
-            color="#2f6fed" bg="#e8f1ff" icon={<ApartmentOutlined />}
+            color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<ApartmentOutlined />}
             active={filterScope === 'all' && !filterPhase}
             onClick={() => { setFilterScope('all'); setFilterPhase(undefined) }}
           />
           <StatCard
             label="活跃" value={counts.active} total={all.length} pct={pctOf(counts.active)}
-            color="#27a06a" bg="#e6f7ef" icon={<CheckCircleFilled />}
+            color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<CheckCircleFilled />}
             active={filterPhase === 'Active'}
             onClick={() => setFilterPhase(filterPhase === 'Active' ? undefined : 'Active')}
           />
           <StatCard
             label="终止中" value={counts.terminating} total={all.length} pct={pctOf(counts.terminating)}
-            color="#f5a623" bg="#fdf4e7" icon={<ExclamationCircleOutlined />}
+            color="var(--color-warn)" bg="var(--ks-warn-bg)" icon={<ExclamationCircleOutlined />}
             active={filterPhase === 'Terminating'}
             onClick={() => setFilterPhase(filterPhase === 'Terminating' ? undefined : 'Terminating')}
           />
           <StatCard
             label="系统项目" value={systemProjects.length} total={all.length} pct={pctOf(systemProjects.length)}
-            color="#5b6a80" bg="#eef1f5" icon={<SettingOutlined />}
+            color="var(--ks-body)" bg="var(--ks-fill)" icon={<SettingOutlined />}
             active={filterScope === 'system'}
             onClick={() => setFilterScope(filterScope === 'system' ? 'all' : 'system')}
           />
         </div>
 
         {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>状态</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>状态</span>
             <Select
               allowClear placeholder="全部" style={{ width: 100 }} value={filterPhase} onChange={setFilterPhase}
               suffixIcon={null} variant="filled"
               options={[{ label: '活跃', value: 'Active' }, { label: '终止中', value: 'Terminating' }]}
             />
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>类型</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>类型</span>
             <Select
               style={{ width: 110 }} value={filterScope} onChange={(v) => setFilterScope(v as Scope)}
               suffixIcon={null} variant="filled"
@@ -444,14 +418,14 @@ export default function ProjectsPage() {
                 sorter: (a, b) => nameOf(a).localeCompare(nameOf(b)),
                 render: (_, o) => (
                   <div className="flex items-center gap-3">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: '#e8f1ff', color: '#2f6fed' }}>
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full text-sm" style={{ background: 'var(--ks-brand-bg)', color: 'var(--color-brand)' }}>
                       <ApartmentOutlined />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <a className="block truncate font-medium" style={{ color: '#15233a' }} onClick={() => setDetail(o)}>
+                      <a className="block truncate font-medium" style={{ color: 'var(--ks-ink)' }} onClick={() => setDetail(o)}>
                         {nameOf(o)}
                       </a>
-                      <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{aliasOf(o) || '-'}</div>
+                      <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{aliasOf(o) || '-'}</div>
                     </div>
                   </div>
                 ),
@@ -462,7 +436,7 @@ export default function ProjectsPage() {
                 width: 90,
                 render: (_, o) => {
                   const sys = isSystemProject(nameOf(o))
-                  const s = sys ? { color: '#5b6a80', bg: '#eef1f5' } : { color: '#2f6fed', bg: '#e8f1ff' }
+                  const s = sys ? { color: 'var(--ks-body)', bg: 'var(--ks-fill)' } : { color: 'var(--color-brand)', bg: 'var(--ks-brand-bg)' }
                   return (
                     <span className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs" style={{ background: s.bg, color: s.color }}>
                       {sys ? '系统项目' : '用户项目'}
@@ -476,7 +450,7 @@ export default function ProjectsPage() {
                 title: '创建时间',
                 width: 160,
                 sorter: (a, b) => (a.metadata?.creationTimestamp ?? '').localeCompare(b.metadata?.creationTimestamp ?? ''),
-                render: (_, o) => <span className="text-xs" style={{ color: '#5b6a80' }}>{datetime(o.metadata?.creationTimestamp)}</span>,
+                render: (_, o) => <span className="text-xs" style={{ color: 'var(--ks-body)' }}>{datetime(o.metadata?.creationTimestamp)}</span>,
               },
               {
                 key: 'actions',
@@ -488,13 +462,13 @@ export default function ProjectsPage() {
                       详情
                     </Button>
                     <Dropdown menu={{ items: ROW_MENU, onClick: onMenu(o) }} trigger={['click']} placement="bottomRight">
-                      <Button size="small" type="text" className="!px-2 !text-[#5c6b80]">
+                      <Button size="small" type="text" className="!px-2 !text-[var(--ks-body)]">
                         更多 <DownOutlined style={{ fontSize: 10 }} />
                       </Button>
                     </Dropdown>
                     <Popconfirm
                       title={`删除项目 ${nameOf(o)}？`}
-                      description={<span style={{ color: '#d94f4f' }}>删除项目将级联删除其下所有资源</span>}
+                      description={<span style={{ color: 'var(--color-danger)' }}>删除项目将级联删除其下所有资源</span>}
                       okText="删除"
                       cancelText="取消"
                       okButtonProps={{ danger: true }}
@@ -516,13 +490,13 @@ export default function ProjectsPage() {
       <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
         {active && aStatus && (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <ApartmentOutlined />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: '#15233a' }}>{nameOf(active)}</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? '#27a06a' : '#5b6a80' }}>
+                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }}>{nameOf(active)}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={{ background: `${TONE_COLOR[aStatus.tone]}1a`, color: aStatus.tone === 'ok' ? 'var(--ks-ok-text)' : 'var(--ks-body)' }}>
                   <span className="size-[6px] rounded-full" style={{ background: TONE_COLOR[aStatus.tone] }} />
                   {aStatus.text}
                 </span>
@@ -545,16 +519,16 @@ export default function ProjectsPage() {
                   {overview.map((it) => (
                     <div key={it.label} className="flex items-center gap-3 text-[13px]">
                       <span className="size-[7px] rounded-full" style={{ background: it.color }} />
-                      <span className="w-12" style={{ color: '#5b6a80' }}>{it.label}</span>
-                      <span className="w-8 text-right font-medium" style={{ color: '#15233a' }}>{it.value}</span>
-                      <div className="h-1.5 flex-1 rounded-full bg-[#eef1f5]">
+                      <span className="w-12" style={{ color: 'var(--ks-body)' }}>{it.label}</span>
+                      <span className="w-8 text-right font-medium" style={{ color: 'var(--ks-ink)' }}>{it.value}</span>
+                      <div className="h-1.5 flex-1 rounded-full bg-[var(--ks-fill)]">
                         <div className="h-1.5 rounded-full" style={{ width: `${Math.round((it.value / overviewMax) * 100)}%`, background: it.color }} />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>{usage.loading ? '加载中…' : '暂无数据'}</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>{usage.loading ? '加载中…' : '暂无数据'}</div>
               )}
             </Panel>
 
@@ -563,22 +537,22 @@ export default function ProjectsPage() {
                 <div className="space-y-2">
                   {projEvents.slice(0, 4).map((ev, i) => (
                     <div key={`${ev.metadata?.name}-${i}`} className="flex items-center gap-2 text-[13px]">
-                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: ev.type === 'Warning' ? '#d94f4f' : '#27a06a' }} />
-                      <span className="w-[92px] shrink-0 truncate font-medium" style={{ color: '#15233a' }}>{ev.reason}</span>
-                      <span className="min-w-0 flex-1 truncate" style={{ color: '#8f9aa9' }}>{ev.message}</span>
-                      <span className="shrink-0 text-xs" style={{ color: '#8f9aa9' }}>{datetime(ev.lastTimestamp ?? ev.firstTimestamp)}</span>
+                      <span className="size-[7px] shrink-0 rounded-full" style={{ background: ev.type === 'Warning' ? 'var(--color-danger)' : 'var(--ks-ok-text)' }} />
+                      <span className="w-[92px] shrink-0 truncate font-medium" style={{ color: 'var(--ks-ink)' }}>{ev.reason}</span>
+                      <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--ks-muted)' }}>{ev.message}</span>
+                      <span className="shrink-0 text-xs" style={{ color: 'var(--ks-muted)' }}>{datetime(ev.lastTimestamp ?? ev.firstTimestamp)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>暂无事件</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>暂无事件</div>
               )}
             </Panel>
           </>
         )}
 
         <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+          <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
             项目即命名空间（Namespace），是集群内资源的隔离边界；删除项目会级联删除其下所有资源，长期停留在「终止中」通常表示有资源卡在删除保护（finalizer）上。
           </div>
         </Panel>
@@ -816,11 +790,11 @@ function ProjectDrawer({ project, cluster, onClose }: { project: K8sObject; clus
     <Drawer open size={520} title={`项目 · ${name}`} onClose={onClose} destroyOnHidden>
       <div className="space-y-6">
         <div>
-          <div className="mb-2 text-[13px] font-medium text-[#79879c]">基本信息</div>
+          <div className="mb-2 text-[13px] font-medium text-[var(--ks-muted)]">基本信息</div>
           <Descriptions
             size="small"
             column={1}
-            styles={{ label: { width: 104, color: '#79879c' } }}
+            styles={{ label: { width: 104, color: 'var(--ks-muted)' } }}
             items={[
               { key: 'name', label: '名称', children: name },
               { key: 'alias', label: '别名', children: aliasOf(project) || '-' },
@@ -832,7 +806,7 @@ function ProjectDrawer({ project, cluster, onClose }: { project: K8sObject; clus
         </div>
 
         <div>
-          <div className="mb-2 text-[13px] font-medium text-[#79879c]">资源统计</div>
+          <div className="mb-2 text-[13px] font-medium text-[var(--ks-muted)]">资源统计</div>
           <div className="grid grid-cols-3 gap-3">
             <StatTile icon={<ContainerOutlined />} label="容器组" value={data?.pods} loading={loading} />
             <StatTile icon={<DeploymentUnitOutlined />} label="部署" value={data?.deployments} loading={loading} />
@@ -859,8 +833,8 @@ function StatTile({
   loading?: boolean
 }) {
   return (
-    <div className="rounded border border-[#ebeef2] px-3 py-3">
-      <div className="flex items-center gap-2 text-xs text-[#79879c]">
+    <div className="rounded-xl bg-[var(--ks-fill-soft)] px-4 py-3">
+      <div className="flex items-center gap-2 text-xs text-[var(--ks-muted)]">
         <span className="text-[15px]">{icon}</span>
         <span className="truncate">{label}</span>
       </div>
@@ -868,7 +842,7 @@ function StatTile({
         {loading ? (
           <Skeleton active={false} title={{ width: 40 }} paragraph={false} />
         ) : (
-          <span className="text-xl font-semibold leading-none" style={{ color: '#15233a' }}>
+          <span className="text-xl font-semibold leading-none" style={{ color: 'var(--ks-ink)' }}>
             {value ?? 0}
           </span>
         )}

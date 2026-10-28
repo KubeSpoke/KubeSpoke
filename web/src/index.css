@@ -4,13 +4,169 @@
 @theme {
   --color-brand: #2f6fed;
   --color-brand-hover: #4f8bff;
+  --color-brand-bg: #e8f1ff;
   --color-ink: #222b45;
-  --color-canvas: #f9fbfd;
+  --color-canvas: #f2f5f9;
   --color-shell: #242e42;
-  --color-line: #ebeef2;
+  --color-line: #eef1f5;
   --color-ok: #59c492;
   --color-warn: #f5a623;
   --color-danger: #d94f4f;
+}
+
+/* =========================================================================
+   设计基调：去线留白
+   -------------------------------------------------------------------------
+   1) 不画线：卡片、表头、表格行、工具条、顶栏、侧栏一律不画 1px 边框；
+   2) 用留白：层级靠「画布色 / 白面」的色差 + 20~24px 的呼吸间距区分；
+   3) 轻投影：白面只用 1px 级极淡投影托底，产生悬浮感而不是描边感；
+   4) 圆角收敛：面 14px、控件 10px，视觉更软，线条感更弱。
+
+   例外（重要）：去线针对的是「结构」，不是「可编辑控件的可辨识性」。
+   输入框 / 下拉 / 数字框 / 文本域在白卡上如果只靠浅灰面撑，亮度只差 3%，
+   表单里就"看不见框"，所以这些控件统一保留一根极淡描边（--ks-line-field）。
+
+   明暗主题：所有颜色只在这里定义一次，切换主题＝换 html[data-theme] 上的
+   一组变量值。页面与组件里禁止再写死十六进制色，否则暗色下会留下白块。
+   ========================================================================= */
+:root {
+  color-scheme: light;
+
+  --ks-canvas: #f2f5f9;
+  --ks-surface: #ffffff;
+  --ks-shell: #ffffff;
+  --ks-ink: #15233a;
+  --ks-body: #36435c;
+  --ks-muted: #8b97a8;
+  --ks-faint: #a9b4c3;
+  --ks-hover: #f4f7fb;
+
+  /* 控件灰面（按钮、附加块、禁用态）：去线后靠底色区分可点区域 */
+  --ks-fill: #eef1f7;
+  --ks-fill-hover: #eaeff7;
+  --ks-fill-active: #e2e9f3;
+  /* 更浅的分区底：代码块、命令块、表头附加块 */
+  --ks-fill-soft: #f5f8fc;
+  --ks-fill-soft-2: #f4f7fb;
+  --ks-disabled-bg: #f1f4f9;
+
+  /* 品牌浅底（菜单选中、Tab 计数、行高亮） */
+  --ks-brand-bg: #e8f1ff;
+  --ks-brand-soft: #eef4ff;
+
+  --ks-code-bg: #eef1f7;
+  --ks-code-color: #40506a;
+
+  --ks-radius-panel: 14px;
+  --ks-radius-control: 10px;
+
+  /* 可编辑控件的边：比结构线实一点，比常规描边淡一点 —— 只用来"看得见框"，不用来分区 */
+  --ks-line-field: #dbe2ed;
+  --ks-line-field-hover: #c2cede;
+
+  /* 白面托底投影：近看几乎无感，只在边缘产生一点点弧度 */
+  --ks-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.04), 0 16px 32px -28px rgba(16, 24, 40, 0.3);
+  --ks-shadow-panel-hover: 0 2px 4px rgba(16, 24, 40, 0.05), 0 22px 44px -28px rgba(16, 24, 40, 0.34);
+  --ks-shadow-popup: 0 16px 40px -16px rgba(16, 24, 40, 0.24), 0 4px 10px -6px rgba(16, 24, 40, 0.1);
+
+  /* 状态浅底：标签、告警条、健康点背后的色块 */
+  --ks-ok-bg: #e6f7ef;
+  --ks-warn-bg: #fff4e0;
+  --ks-danger-bg: #fdecec;
+  --ks-violet: #7c5cff;
+  --ks-violet-bg: #f0ebff;
+  --ks-teal: #1fa79a;
+  --ks-teal-bg: #e2f7f5;
+  --ks-ok-text: #27a06a;
+  --ks-warn-text: #c47f0a;
+  --ks-danger-text: #ca2621;
+
+  --ks-scroll-bar: #d6dde8;
+  --ks-scroll-thumb: #dde3ec;
+  --ks-scroll-thumb-hover: #cbd4e1;
+
+  /* 终端 / 日志：两端都用深底，明暗主题下都保持"黑底等宽字" */
+  --ks-log-bg: #1e2a3a;
+  --ks-log-fg: #cbd5e1;
+
+  /* 登录 / 初始化 / 强制改密页的环境光：角上一团冷光 + 一团暖绿，底子是极浅的蓝白 */
+  --ks-auth-glow-1: #eaf2ff;
+  --ks-auth-glow-2: #e8f8f1;
+  --ks-auth-base-1: #f7fafd;
+  --ks-auth-base-2: #eef4fb;
+}
+
+/* ---------------------------------------------------------------- 暗色令牌
+   与 antd 默认暗黑配色同源（ksTheme.ts 暗色分支不再覆盖任何颜色 token）：
+   容器 #141414 / 浮层 #1f1f1f / 画布 #000000；
+   文字 rgba(255,255,255,.85/.65/.45/.25)；边框 #424242 / #303030；
+   品牌蓝 #1668dc（antd dark 默认主色），PrimaryBg #15325b。
+   亮度阶梯：canvas(最暗) < surface(卡片) < shell(外壳/浮层) < field(控件边)，
+   "卡片浮在画布上"和"控件框得出来"两条在暗色下依然成立。 */
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --ks-canvas: #000000;
+  --ks-surface: #141414;
+  --ks-shell: #1f1f1f;
+  --ks-ink: rgba(255, 255, 255, 0.85);
+  --ks-body: rgba(255, 255, 255, 0.65);
+  --ks-muted: rgba(255, 255, 255, 0.45);
+  --ks-faint: rgba(255, 255, 255, 0.25);
+  --ks-hover: rgba(255, 255, 255, 0.04);
+
+  --ks-fill: rgba(255, 255, 255, 0.12);
+  --ks-fill-hover: rgba(255, 255, 255, 0.18);
+  --ks-fill-active: rgba(255, 255, 255, 0.24);
+  --ks-fill-soft: rgba(255, 255, 255, 0.04);
+  --ks-fill-soft-2: rgba(255, 255, 255, 0.04);
+  --ks-disabled-bg: rgba(255, 255, 255, 0.04);
+
+  --ks-brand-bg: #15325b;
+  --ks-brand-soft: rgba(22, 104, 220, 0.16);
+
+  --ks-code-bg: rgba(255, 255, 255, 0.08);
+  --ks-code-color: rgba(255, 255, 255, 0.65);
+
+  --ks-line-field: #424242;
+  --ks-line-field-hover: rgba(255, 255, 255, 0.3);
+
+  --ks-shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 34px -28px rgba(0, 0, 0, 0.85);
+  --ks-shadow-panel-hover: 0 2px 6px rgba(0, 0, 0, 0.45), 0 24px 48px -28px rgba(0, 0, 0, 0.9);
+  --ks-shadow-popup: 0 18px 44px -14px rgba(0, 0, 0, 0.72), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
+
+  /* 状态色：antd dark 默认 success/warning/error 及其浅底 */
+  --ks-ok-bg: #162312;
+  --ks-warn-bg: #2b2111;
+  --ks-danger-bg: #2c1618;
+  --ks-violet: #a48bff;
+  --ks-violet-bg: rgba(164, 139, 255, 0.16);
+  --ks-teal: #4fd1c0;
+  --ks-teal-bg: rgba(79, 209, 192, 0.16);
+  --ks-ok-text: #6abe39;
+  --ks-warn-text: #d89614;
+  --ks-danger-text: #dc4446;
+
+  --ks-scroll-bar: rgba(255, 255, 255, 0.06);
+  --ks-scroll-thumb: rgba(255, 255, 255, 0.15);
+  --ks-scroll-thumb-hover: rgba(255, 255, 255, 0.25);
+
+  --ks-auth-glow-1: rgba(22, 104, 220, 0.14);
+  --ks-auth-glow-2: rgba(73, 170, 25, 0.08);
+  --ks-auth-base-1: #111111;
+  --ks-auth-base-2: #000000;
+
+  /* Tailwind @theme 里那批语义色也要跟着换，否则 bg-brand/text-ink 这类类名会停在亮色值 */
+  --color-brand: #1668dc;
+  --color-brand-hover: #3c89e8;
+  --color-brand-bg: #15325b;
+  --color-ink: rgba(255, 255, 255, 0.85);
+  --color-canvas: #000000;
+  --color-shell: #1f1f1f;
+  --color-line: #303030;
+  --color-ok: #49aa19;
+  --color-warn: #d89614;
+  --color-danger: #dc4446;
 }
 
 html,
@@ -26,8 +182,8 @@ body,
 }
 
 body {
-  background: var(--color-canvas);
-  color: #222b45;
+  background: var(--ks-canvas);
+  color: var(--ks-ink);
   font-family:
     -apple-system,
     BlinkMacSystemFont,
@@ -37,6 +193,43 @@ body {
     'Microsoft YaHei',
     sans-serif;
   font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 主题切换时给全局一点过渡，避免整页硬闪。只过渡颜色，不动布局。 */
+body,
+.ks-panel,
+.ant-card,
+.ks-topbar,
+.ant-layout-sider,
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* 单色品牌图标（GitHub / Gitee）：源文件是深色填充，暗色下要反相才看得见 */
+html[data-theme='dark'] .ks-mono-icon {
+  filter: invert(0.92) hue-rotate(180deg) brightness(1.05);
+}
+
+/* ---------------------------------------------------------------- 登录类页面
+   登录 / 初始化 / 强制改密三页共用一套"环境光"背景：
+   角上一团冷蓝光 + 一团暖绿光，底子是画布色渐变。暗色下光是低饱和的，
+   卡片仍然是那一档 surface 色，不依赖 bg-white。 */
+.ks-auth-bg {
+  background:
+    radial-gradient(1200px 700px at 12% 8%, var(--ks-auth-glow-1) 0%, transparent 55%),
+    radial-gradient(900px 600px at 88% 90%, var(--ks-auth-glow-2) 0%, transparent 50%),
+    linear-gradient(160deg, var(--ks-auth-base-1) 0%, var(--ks-auth-base-2) 100%);
+}
+
+.ks-auth-card {
+  background: var(--ks-surface);
+  box-shadow: var(--ks-shadow-panel-hover);
 }
 
 .kbd-mono {
@@ -44,8 +237,8 @@ body {
 }
 
 .log-stream {
-  background: #1e2a3a;
-  color: #cbd5e1;
+  background: var(--ks-log-bg);
+  color: var(--ks-log-fg);
   font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -58,17 +251,48 @@ body {
   height: 340px;
   padding: 8px 10px;
   overflow: hidden;
-  background: #1e2a3a;
-  border-radius: 6px;
+  background: var(--ks-log-bg);
+  border-radius: 10px;
 }
 
-/* 顶栏：KubeSphere 白底 + 细下边框 */
+/* ---------------------------------------------------------------- 应用外壳
+   顶栏与侧栏同为一档色（亮色纯白 / 暗色 #1f1f1f），不画任何分隔线；
+   内容区退到画布色，白面（卡片）自己浮起来。 */
 .ks-topbar {
   height: 54px;
   /* antd 的 headerHeight token 会给 Header 写 line-height，被 Badge 继承后会把顶栏撑高 */
   line-height: 1.5;
-  background: #fff;
-  border-bottom: 1px solid var(--color-line);
+  background: var(--ks-surface);
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* 顶栏图标热区（仓库链接 / 主题切换）：无描边的圆形按钮，悬停给一层灰面 */
+.ks-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ks-muted);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+.ks-icon-btn:hover {
+  background: var(--ks-fill);
+  color: var(--ks-ink);
+}
+.ks-icon-btn:active {
+  background: var(--ks-fill-active);
+}
+.ks-icon-btn:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }
 
 /* 侧边栏：菜单区独立滚动，不与内容区互相带动 */
@@ -78,140 +302,712 @@ body {
   height: 100%;
 }
 
-/* 菜单滚动区保留滚动能力但不显示滚动条 */
+/* 菜单滚动区保留滚动能力但不显示滚动条；顶边做 12px 淡出，
+   滚动时半截菜单项不会硬生生被切断（未滚动时内容正好在渐变结束处） */
 .ks-sider .ks-sider-scroll {
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12px);
 }
 .ks-sider .ks-sider-scroll::-webkit-scrollbar {
   display: none;
 }
 
-/* 上下文左侧菜单：KubeSphere 选中态 = 浅蓝底 + 品牌蓝字，无左侧竖条 */
+/* 上下文菜单：选中项只靠品牌浅底 + 品牌字，没有竖条与描边 */
 .ks-menu .ant-menu-item {
-  margin-inline: 8px !important;
+  margin-inline: 10px !important;
   width: auto !important;
-  border-radius: 4px !important;
+  border-radius: var(--ks-radius-control) !important;
+  transition:
+    background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    color 0.16s ease;
+}
+
+.ks-menu .ant-menu-item-selected {
+  background: var(--ks-brand-bg) !important;
+  box-shadow: none;
+}
+
+/* antd inline 菜单的右侧选中竖条：去线后不需要 */
+.ks-menu .ant-menu-item::after,
+.ks-menu .ant-menu-submenu-title::after {
+  display: none !important;
+  border-inline-end: 0 !important;
 }
 
 .ks-menu .ant-menu-item-group-title {
-  padding-inline: 16px;
+  padding-inline: 20px;
+  letter-spacing: 0.04em;
 }
 
-/* 扁平面板：1px 边框、微圆角、无阴影（对齐 KubeSphere 列表卡） */
-.ks-card {
-  background: #fff;
-  border: 1px solid var(--color-line);
-  border-radius: 4px;
+/* ---------------------------------------------------------------- 折叠态菜单
+   64px 宽只够放一列图标：分组标题没有横向空间，硬留着会被压成「配…」这种断面，
+   所以整条隐藏，组与组之间改用留白分隔（去线留白，不画分隔线）。
+   菜单名与所属分组改由悬停 tooltip 提供（MainLayout 里传 title）。 */
+.ks-menu.ant-menu-inline-collapsed .ant-menu-item-group-title {
+  display: none !important;
+}
+.ks-menu.ant-menu-inline-collapsed .ant-menu-item-group + .ant-menu-item-group {
+  margin-top: 14px !important;
+}
+/* 折叠态首项别贴顶（展开态靠分组标题撑出的留白，这里补回来） */
+.ks-menu.ant-menu-inline-collapsed {
+  padding-top: 12px !important;
 }
 
-/* 列表页工具条 */
+/* 图标一律居中：antd 的折叠内边距是按 16px 图标算的，字号一改就左右漂 */
+.ks-menu.ant-menu-inline-collapsed .ant-menu-item {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 40px !important;
+  line-height: 40px !important;
+  padding-inline: 0 !important;
+}
+.ks-menu.ant-menu-inline-collapsed .ant-menu-item .anticon {
+  font-size: 18px;
+  margin-inline-end: 0 !important;
+}
+.ks-menu.ant-menu-inline-collapsed .ant-menu-title-content {
+  display: none;
+}
+/* 折叠态告警角标挂在图标上，别顶到图标本体 */
+.ks-menu-icon-dot {
+  display: inline-flex;
+}
+
+/* 折叠触发器：贴底一个图标钮，不画顶部横线。
+   trigger 在 antd 里是 position:fixed 悬浮层，必须给不透明底色，
+   否则菜单滚到下面时文字会从按钮里穿过去。 */
+.ks-sider .ant-layout-sider-trigger {
+  background: var(--ks-surface) !important;
+  color: var(--ks-faint);
+  border-top: 0;
+  box-shadow: none;
+  height: 46px !important;
+  line-height: 46px !important;
+}
+/* 被按钮挡住的菜单项向上淡出，不出现硬切断面 */
+.ks-sider .ant-layout-sider-trigger::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 100% 0;
+  height: 16px;
+  background: linear-gradient(to bottom, transparent, var(--ks-surface));
+  pointer-events: none;
+}
+.ks-sider .ant-layout-sider-trigger:hover {
+  background: var(--ks-fill) !important;
+  color: var(--color-brand);
+}
+.ks-sider-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+/* ---------------------------------------------------------------- 白面
+   .ks-panel / .ks-card 是全站卡片的唯一来源：一档色 + 大圆角 + 极淡投影 */
+.ks-panel,
+.ks-card,
+.ant-card {
+  background: var(--ks-surface);
+  border: 0;
+  border-radius: var(--ks-radius-panel);
+  box-shadow: var(--ks-shadow-panel);
+}
+
+.ant-card .ant-card-head {
+  border-bottom: 0;
+}
+
+.ant-card .ant-card-body {
+  color: var(--ks-body);
+}
+
+.ks-panel-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.ks-panel-hover:hover {
+  box-shadow: var(--ks-shadow-panel-hover);
+}
+
+/* ---------------------------------------------------------------- 统计卡选中态
+   只往卡面上叠一层 6% 品牌色是不够的：卡面一变淡，里面 --ks-muted 的说明文字
+   就跟着陷进底色里，越"选中"越看不清。所以选中时同时把文字提一档、
+   图标砖翻成白底、箭头变品牌色，让"选中"是变清楚而不是变模糊。 */
+.ks-stat-active .ks-stat-label,
+.ks-stat-active .ks-stat-sub {
+  color: var(--ks-body) !important;
+}
+.ks-stat-active .ks-stat-icon {
+  background: var(--ks-surface) !important;
+}
+.ks-stat-active .ks-stat-arrow {
+  color: var(--color-brand) !important;
+}
+
+/* 列表页工具条：不画下边框，用内边距与表格之间的留白分区 */
 .ks-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--color-line);
+  padding: 4px 24px 14px;
 }
 
-.ks-search {
-  background: #f4f6fa !important;
-  border: 1px solid transparent !important;
-  border-radius: 16px !important;
-}
-
-.ks-search .ant-input,
-.ks-search .ant-input-affix-wrapper {
-  background: transparent !important;
-}
-
-/* 列表表格：KubeSphere 表头浅蓝灰底 + 中灰小字 + 单条浅分隔线 */
+/* ---------------------------------------------------------------- 表格去线
+   表头只剩灰字，行与行之间只剩行高；悬停用极浅底色提示可点。 */
 .ant-table-wrapper .ant-table {
   background: transparent;
+  color: var(--ks-body);
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th,
 .ant-table-wrapper .ant-table-thead > tr > td {
-  background: #f4f6fa !important;
-  color: #8f9aa9 !important;
+  background: transparent !important;
+  color: var(--ks-muted) !important;
   font-weight: 500 !important;
   font-size: 12px !important;
-  border-bottom: 1px solid #ebeef2 !important;
-  padding-block: 11px !important;
+  letter-spacing: 0.02em;
+  white-space: nowrap !important;
+  border-bottom: 0 !important;
+  padding: 8px 16px 12px !important;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th::before {
   display: none !important;
 }
 
-/* 列宽测量行（tbody 首个 height:0 的隐藏 tr）：这里的 !important padding/border 会盖掉组件内联的 0，
-   把空隙撑到表头和首行之间，必须排除 */
+/* 列宽测量行（tbody 首个 height:0 的隐藏 tr）：排除掉，避免撑出空隙 */
 .ant-table-wrapper .ant-table-tbody > tr:not(.ant-table-measure-row) > td {
-  border-bottom: 1px solid #f0f2f5 !important;
-  color: #36435c;
-  padding-block: 15px !important;
-}
-
-.ant-table-wrapper .ant-table-tbody > tr:last-child > td {
-  border-bottom: none !important;
+  border-bottom: 0 !important;
+  color: var(--ks-body);
+  padding: 16px !important;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr:not(.ant-table-measure-row):hover > td {
-  background: #f9fbfc !important;
+  background: var(--ks-hover) !important;
 }
 
-/* 分页条 */
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-placeholder > td,
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+  background: transparent !important;
+}
+
+/* 分页条：抬头不画线，只留白 */
 .ant-table-wrapper .ant-pagination {
   margin: 0 !important;
-  padding: 12px 20px;
-  border-top: 1px solid #ebeef2;
+  padding: 10px 12px 2px;
+  border-top: 0;
 }
 
-/* 资源类型切换：KubeSphere 用文字 Tab + 品牌下划线，不用深色胶囊 */
+/* ---------------------------------------------------------------- Tabs 去线
+   只保留品牌色下划线作选中指示，不再画整条基线 */
 .ks-tabs .ant-tabs-nav {
   margin: 0;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 .ks-tabs .ant-tabs-nav::before {
-  border-bottom: 1px solid #ebeef2;
+  border-bottom: 0;
 }
 
 .ks-tabs .ant-tabs-tab {
   margin: 0 !important;
-  padding: 12px 4px !important;
-  color: #6b7a90;
+  padding: 14px 4px !important;
+  color: var(--ks-muted);
 }
 
 .ks-tabs .ant-tabs-tab + .ant-tabs-tab {
-  margin-left: 24px !important;
+  margin-left: 28px !important;
 }
 
 .ks-tabs .ant-tabs-tab:hover {
-  color: #2f6fed;
+  color: var(--color-brand);
 }
 
 .ks-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: #2f6fed !important;
+  color: var(--color-brand) !important;
   font-weight: 500;
 }
 
 .ks-tabs .ant-tabs-ink-bar {
-  background: #2f6fed;
+  background: var(--color-brand);
   height: 2px;
+  border-radius: 2px;
 }
 
 .ks-tabs .ks-count {
-  background: #eef1f5;
-  color: #5b6b80;
+  background: var(--ks-fill);
+  color: var(--ks-muted);
 }
 
 .ks-tabs .ant-tabs-tab-active .ks-count {
-  background: #e8f1ff;
-  color: #2f6fed;
+  background: var(--ks-brand-bg);
+  color: var(--color-brand);
 }
 
 /* 服务与发现：选中行高亮（右侧详情跟随） */
 .ant-table-tbody > tr.ks-row-active > td {
-  background: #f0f7ff !important;
+  background: var(--ks-brand-soft) !important;
+}
+
+/* ---------------------------------------------------------------- antd 控件
+   按钮去描边（灰面即可辨识），可编辑控件保留一根极淡描边（否则表单里看不见框）。 */
+/* 默认按钮：灰面替代描边，悬停加深一档 */
+.ant-btn-default:not(:disabled) {
+  background: var(--ks-fill);
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ks-body);
+}
+.ant-btn-default:not(:disabled):hover {
+  background: var(--ks-fill-hover);
+  border-color: transparent;
+  color: var(--ks-ink);
+}
+.ant-btn-default:not(:disabled):active {
+  background: var(--ks-fill-active);
+  border-color: transparent;
+}
+
+/* 文字按钮（顶栏主题切换这类）：无底色，悬停给一层浅面 */
+.ant-btn-text:not(:disabled):hover {
+  background: var(--ks-fill) !important;
+}
+
+/* 输入类控件：一档色 + 极淡描边。浅灰面在白卡上只有 3% 亮度差，落进表单就"没有框"。
+   注意 :where() 的用法 —— 排除条件不参与权重计算，基础规则只有 1 个类的权重，
+   这样后面的 hover / focus / 校验态 / 禁用态才能按书写顺序顺利覆盖它。 */
+.ant-input:where(:not(textarea)):where(:not(.ant-input-disabled)),
+textarea.ant-input:where(:not(.ant-input-disabled)),
+.ant-input-affix-wrapper:where(:not(.ant-input-affix-wrapper-disabled)),
+.ant-input-number:where(:not(.ant-input-number-disabled)),
+.ant-picker:where(:not(.ant-picker-disabled)) {
+  background: var(--ks-surface) !important;
+  border: 1px solid var(--ks-line-field) !important;
+  border-radius: var(--ks-radius-control) !important;
+  color: var(--ks-ink);
+  box-shadow: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+/* Select：antd v6 把边框与底色挂在根节点上（.ant-select-content 只是内容层），
+   所以这里必须改根节点，改 .ant-select-selector 是 v5 的写法、在 v6 里不生效。 */
+.ant-select:where(:not(.ant-select-borderless)):where(:not(.ant-select-disabled)) {
+  background: var(--ks-surface) !important;
+  border-color: var(--ks-line-field) !important;
+  border-radius: var(--ks-radius-control) !important;
+  box-shadow: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.ant-select .ant-select-selector {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--ks-ink);
+}
+
+/* 内层输入（前后缀包裹、数字框、日期框内）不要再叠一层框 */
+.ant-input-affix-wrapper > .ant-input,
+.ant-input-affix-wrapper > input.ant-input,
+.ant-input-number-input,
+.ant-picker input.ant-picker-input > input {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--ks-ink) !important;
+}
+
+/* 悬停：描边深一档，底色不变，避免整块控件"跳色" */
+.ant-input:where(:not(textarea)):where(:not(.ant-input-disabled)):hover,
+textarea.ant-input:where(:not(.ant-input-disabled)):hover,
+.ant-input-affix-wrapper:where(:not(.ant-input-affix-wrapper-disabled)):hover,
+.ant-input-number:where(:not(.ant-input-number-disabled)):hover,
+.ant-picker:where(:not(.ant-picker-disabled)):hover,
+.ant-select:where(:not(.ant-select-borderless)):where(:not(.ant-select-disabled)):hover {
+  border-color: var(--ks-line-field-hover) !important;
+}
+
+/* 聚焦：品牌色描边 + 光环（只有光环没有框时，聚焦反而不如平时明显） */
+.ant-input:where(:not(textarea)):focus,
+textarea.ant-input:focus,
+.ant-input-affix-wrapper:where(:not(.ant-input-affix-wrapper-disabled)):focus-within,
+.ant-input-affix-wrapper-focused,
+.ant-input-number-focused,
+.ant-picker-focused,
+.ant-select:where(:not(.ant-select-disabled)):focus,
+.ant-select-focused:not(.ant-select-disabled) {
+  background: var(--ks-surface) !important;
+  border-color: var(--color-brand) !important;
+  box-shadow: 0 0 0 3px var(--color-brand-bg) !important;
+}
+
+/* 内层输入不画自己的聚焦光环 —— 光环只由外壳那一层承担。
+   antd v6 的 Input.TextArea 只要带 showCount，textarea 外面就会再包一层
+   .ant-input-affix-wrapper：外壳按上面的规则画了圆角描边 + 3px 光环，内层 textarea 又画一次，
+   而内层被"内层输入"规则压成 border-radius:0，两个光环在四角互相切断，看着就是"角坏了"。 */
+.ant-input-affix-wrapper > .ant-input:focus,
+.ant-input-affix-wrapper > input.ant-input:focus,
+.ant-input-affix-wrapper > textarea.ant-input:focus {
+  box-shadow: none !important;
+}
+
+/* 禁用态：退回浅灰面并让描边消失，和可编辑态明确区分 */
+.ant-input[disabled],
+textarea.ant-input[disabled],
+.ant-input-disabled,
+.ant-input-affix-wrapper-disabled,
+.ant-input-number-disabled,
+.ant-picker-disabled,
+.ant-select-disabled {
+  background: var(--ks-disabled-bg) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--ks-faint) !important;
+}
+
+/* 校验态：必须排在常态、悬停、聚焦之后，并用两个类把权重顶到常态之上，
+   否则上面那几条 !important 会把 antd 的红/橙边框一起抹掉 */
+.ant-input.ant-input-status-error,
+.ant-input.ant-input-status-error:hover,
+.ant-input.ant-input-status-error:focus,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-error,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-error:hover,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-error:focus-within,
+.ant-input-number.ant-input-number-status-error,
+.ant-picker.ant-picker-status-error,
+.ant-select.ant-select-status-error,
+.ant-select.ant-select-status-error:hover,
+.ant-select.ant-select-status-error.ant-select-focused {
+  border-color: var(--color-danger, #d94f4f) !important;
+}
+
+.ant-input.ant-input-status-warning,
+.ant-input.ant-input-status-warning:hover,
+.ant-input.ant-input-status-warning:focus,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-warning,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-warning:hover,
+.ant-input-affix-wrapper.ant-input-affix-wrapper-status-warning:focus-within,
+.ant-input-number.ant-input-number-status-warning,
+.ant-picker.ant-picker-status-warning,
+.ant-select.ant-select-status-warning,
+.ant-select.ant-select-status-warning:hover,
+.ant-select.ant-select-status-warning.ant-select-focused {
+  border-color: var(--color-warn, #f5a623) !important;
+}
+
+/* 数字框 / 输入框的附加块（"秒""分钟"这类单位）：与主框拼成一条，不各画各的 */
+.ant-input-group-addon,
+.ant-input-number-group-addon {
+  background: var(--ks-fill-soft-2) !important;
+  border: 1px solid var(--ks-line-field) !important;
+  border-inline-start: 0 !important;
+  border-radius: 0 var(--ks-radius-control) var(--ks-radius-control) 0 !important;
+  color: var(--ks-muted) !important;
+  font-size: 12px;
+}
+
+/* 带单位的控件：主框只圆左侧两角，和单位块无缝贴在一起。
+   antd v6 的 addonAfter 走 Space.Compact，贴边一侧的圆角由 -compact-first/last-item 控制，
+   这里补 !important 是因为上面的通用规则把圆角统一顶成了 10px。 */
+.ant-space-compact > .ant-input.ant-input-compact-first-item,
+.ant-space-compact > .ant-input-affix-wrapper.ant-input-compact-first-item,
+.ant-space-compact > .ant-input-number.ant-input-number-compact-first-item,
+.ant-space-compact > .ant-picker.ant-picker-compact-first-item {
+  border-start-end-radius: 0 !important;
+  border-end-end-radius: 0 !important;
+}
+.ant-space-compact > .ant-input.ant-input-compact-last-item,
+.ant-space-compact > .ant-input-number.ant-input-number-compact-last-item {
+  border-start-start-radius: 0 !important;
+  border-end-start-radius: 0 !important;
+}
+.ant-input-group > .ant-input:first-child,
+.ant-input-number-group > .ant-input-number:first-child {
+  border-start-end-radius: 0 !important;
+  border-end-end-radius: 0 !important;
+}
+
+/* 禁用态按钮：只留极淡底，不画描边 */
+.ant-btn:disabled,
+.ant-btn.ant-btn-disabled {
+  background: var(--ks-disabled-bg) !important;
+  border-color: transparent !important;
+  color: var(--ks-faint) !important;
+  box-shadow: none !important;
+}
+
+/* 搜索框：整条读作一个控件
+   antd v6 的 Input.Search 是 Space.Compact（输入框 + 按钮两块拼贴），靠 -1px 边框重叠对齐。
+   只要其中一块的底色/圆角/描边被改过，接缝就会露出来。所以这里把「底色 + 描边 + 圆角」
+   只画在外壳上，内部输入框与按钮一律透明无框 —— 中间不可能再出现缝或色差。 */
+.ant-input-search,
+.ant-input-search.ant-input-group-wrapper,
+.ks-search {
+  display: inline-flex !important;
+  align-items: center;
+  height: 32px;
+  padding: 0 2px 0 11px;
+  background: var(--ks-surface);
+  border: 1px solid var(--ks-line-field);
+  border-radius: var(--ks-radius-control);
+  overflow: hidden;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.ant-input-search:hover,
+.ks-search:hover {
+  border-color: var(--ks-line-field-hover);
+}
+
+.ant-input-search:focus-within,
+.ks-search:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-bg);
+}
+
+/* 内部输入：透明无框，吃掉外壳剩下的宽度 */
+.ant-input-search .ant-input-affix-wrapper,
+.ant-input-search > .ant-input,
+.ant-input-search .ant-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.ant-input-search .ant-input-suffix {
+  margin-inline-start: 4px;
+}
+
+/* 内部搜索按钮：不画分割线，只做图标热区 */
+.ant-input-search .ant-input-search-btn,
+.ant-input-search .ant-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  color: var(--ks-muted) !important;
+  box-shadow: none !important;
+}
+
+.ant-input-search .ant-input-search-btn:hover,
+.ant-input-search .ant-btn:hover {
+  color: var(--color-brand) !important;
+  background: var(--ks-brand-soft) !important;
+}
+
+/* 小尺寸搜索（表格上方的过滤器）：外壳与热区同步收一档 */
+.ant-input-search:has(.ant-input-sm),
+.ks-search:has(.ant-input-sm) {
+  height: 28px;
+  padding-inline-start: 9px;
+}
+.ant-input-search:has(.ant-input-sm) .ant-input-search-btn,
+.ant-input-search:has(.ant-input-sm) .ant-btn {
+  width: 26px;
+  height: 26px;
+}
+
+/* 多行文本域：给一个能看出范围的浅底 + 拖拽手柄 */
+textarea.ant-input {
+  padding: 8px 11px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* 行内代码（表格里的 Auth/Login 这类）：灰面替代 antd 默认的方块描边 */
+.ant-typography code,
+code.ant-typography,
+.ant-typography-code {
+  background: var(--ks-code-bg);
+  border: 0;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 12px;
+  color: var(--ks-code-color);
+}
+
+/* 多行命令块：整段读作一个浅面板，复制按钮浮在右上角，
+   不要让 .ant-typography-code 的底色按行把文字"涂黄" */
+.ks-cmd.ant-typography {
+  position: relative;
+  margin: 0;
+  padding: 12px 42px 12px 14px;
+  background: var(--ks-fill-soft);
+  border-radius: var(--ks-radius-control);
+  font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--ks-body);
+  word-break: break-all;
+}
+.ks-cmd .ant-typography-copy {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  margin: 0;
+  color: var(--ks-muted);
+}
+/* 命令块内部的 <code> 不再单画一层底色，否则整段像被荧光笔涂过 */
+.ks-cmd code,
+.ks-cmd .ant-typography-code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* 弹层：去描边，只留投影 */
+.ant-dropdown-menu,
+.ant-select-dropdown,
+.ant-picker-panel-container,
+.ant-popover-inner,
+.ant-menu-submenu-popup > .ant-menu {
+  box-shadow: var(--ks-shadow-popup) !important;
+  border: 0 !important;
+}
+
+/* 提示条 / 抽屉 / 弹窗：一律不画分隔线 */
+.ant-alert {
+  border: 0;
+  border-radius: 12px;
+}
+.ant-drawer-header {
+  border-bottom: 0;
+}
+.ant-drawer-footer {
+  border-top: 0;
+}
+.ant-modal-header {
+  border-bottom: 0;
+}
+
+/* 折叠面板：小标题 + 留白分组，不画外框与面板分隔线 */
+.ant-collapse {
+  background: transparent;
+  border: 0;
+}
+.ant-collapse > .ant-collapse-item {
+  border-bottom: 0;
+}
+.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+  padding: 10px 0;
+  color: var(--ks-body);
+}
+.ant-collapse .ant-collapse-content {
+  background: transparent;
+  border-top: 0;
+}
+
+/* 顶栏的集群切换器是「上下文芯片」不是表单控件：保留灰面，不加框 */
+.ks-topbar .ant-select:not(.ant-select-disabled) {
+  background: var(--ks-fill) !important;
+  border-color: transparent !important;
+}
+.ks-topbar .ant-select:not(.ant-select-disabled):hover {
+  background: var(--ks-fill-hover) !important;
+  border-color: transparent !important;
+}
+.ks-topbar .ant-select-focused:not(.ant-select-disabled) {
+  background: var(--ks-surface) !important;
+  border-color: var(--color-brand) !important;
+  box-shadow: 0 0 0 3px var(--color-brand-bg) !important;
+}
+
+/* Tabs 基线：横向 Tab 一律去掉那条横线，只留下划线做指示 */
+.ant-tabs-top > .ant-tabs-nav::before {
+  border-bottom: 0;
+}
+
+.ant-modal-content {
+  box-shadow: var(--ks-shadow-popup) !important;
+}
+
+/* 分段控制器：浅轨 + 浮起滑块 */
+.ant-segmented {
+  border-radius: var(--ks-radius-control);
+}
+.ant-segmented .ant-segmented-thumb,
+.ant-segmented .ant-segmented-item-selected {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 14px -10px rgba(16, 24, 40, 0.3);
+}
+
+/* 空表：没有数据可横向滚动，就不该在卡片底部横一条滚动条（很容易被读成多出来的一道线）。
+   同时让表头收进容器宽度：否则 8 列的表格仍按 scroll.x 撑到 1080，右列会被挤出可视区。 */
+.ant-table-empty .ant-table-content,
+.ant-table-empty .ant-table-body {
+  overflow-x: hidden !important;
+}
+
+.ant-table-empty .ant-table-content table,
+.ant-table-empty .ant-table-body table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: auto !important;
+}
+
+.ant-table-empty .ant-table-content col,
+.ant-table-empty .ant-table-body col {
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+/* 细腻滚动条。
+   注意：Chromium 里一旦设了 scrollbar-width / scrollbar-color 标准属性，
+   ::-webkit-scrollbar 的自定义样式会被忽略，退回系统滚动条（带箭头 + 整条轨道）。
+   所以标准属性只给不支持 webkit 伪元素的浏览器（Firefox），Chromium 走下面的自定义样式。 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ks-scroll-bar) transparent;
+}
+
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--ks-scroll-thumb);
+    border-radius: 8px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--ks-scroll-thumb-hover);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  /* 横条再收一档，避免在卡片底部形成一条明显的灰杠 */
+  .ant-table-content::-webkit-scrollbar,
+  .ant-table-body::-webkit-scrollbar {
+    height: 6px;
+  }
 }

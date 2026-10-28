@@ -38,14 +38,9 @@ export default function HelmPage() {
   const activeRepoId = repoId ?? rows[0]?.id
 
   return (
-    <div className="space-y-3">
-      <Tabs
-        activeKey={tab}
-        onChange={go}
-        items={TABS}
-        className="rounded-lg bg-white px-4 pt-1"
-        style={{ border: '1px solid #e6ebf1' }}
-      />
+    // 紧凑布局：Tab 条与内容是同一张卡的两段，中间不再插一张白卡和一份间距
+    <div className="ks-panel overflow-hidden">
+      <Tabs activeKey={tab} onChange={go} items={TABS} className="ks-tabs pt-1" />
 
       {tab === 'market' && (
         <MarketTab

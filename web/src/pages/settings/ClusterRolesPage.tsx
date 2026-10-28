@@ -40,6 +40,7 @@ import { datetime } from '../../utils/format'
 import { toYaml } from '../../utils/yaml'
 import type { ResourceDescriptor } from '../../config/nav'
 import { InviteMemberModal } from './MembersPage'
+import { StatCard } from '../../components/StatCard'
 
 /** inline 描述符：本页面只用通用 K8s 接口读写 RBAC 对象 */
 const CLUSTER_ROLE: ResourceDescriptor = {
@@ -121,7 +122,7 @@ function usePager(all: number) {
         if (ps && ps !== pageSize) setPageSize(ps)
       },
       showTotal: (total: number) => (
-        <Space size={16} className="text-xs text-[#5c6b80]">
+        <Space size={16} className="text-xs text-[var(--ks-body)]">
           <span>总数：{total}</span>
           <span className="inline-flex items-center gap-1">
             每页显示：
@@ -479,7 +480,7 @@ function CreateRoleModal({
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name: fieldName, ...restField }) => (
-                <div key={key} className="mb-2 rounded border border-[#ebeef2] px-3 pt-2">
+                <div key={key} className="mb-2 rounded-xl bg-[var(--ks-fill-soft)] px-4 pt-3">
                   <Flex gap={8} wrap align="flex-start">
                     <Form.Item {...restField} name={[fieldName, 'apiGroups']} label="API 组" className="!mb-2 min-w-[200px] flex-1">
                       <Select mode="tags" allowClear placeholder="选择或输入，留空 = 核心组" options={GROUP_OPTIONS} />
@@ -528,7 +529,7 @@ function CreateRoleModal({
 }
 
 /** tone token：ok/warn/danger/muted 与节点管理页同款 */
-const TONE_COLOR: Record<string, string> = { ok: '#59c492', warn: '#f5a623', danger: '#d94f4f', muted: '#9aa7b8' }
+const TONE_COLOR: Record<string, string> = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', danger: 'var(--color-danger)', muted: 'var(--ks-muted)' }
 
 /**
  * 内置角色启发式（仅用现有 metadata，不新增接口）：K8s 默认 RBAC 角色通常带 system: 前缀
@@ -542,12 +543,12 @@ const pctOf = (n: number, total: number) => (total ? `${Math.round((n / total) *
 /** 右侧竖排面板（与节点管理页同款） */
 function Panel({ title, extra, children }: { title: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-      <div className="flex items-center justify-between px-4" style={{ height: 46, borderBottom: '1px solid #eef1f5' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#15233a' }}>{title}</span>
+    <div className="ks-panel">
+      <div className="flex items-center justify-between px-5 pb-2 pt-4" style={{ minHeight: 42 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ks-ink)' }}>{title}</span>
         {extra}
       </div>
-      <div className="px-4 py-3">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </div>
   )
 }
@@ -555,35 +556,8 @@ function Panel({ title, extra, children }: { title: string; extra?: ReactNode; c
 function FieldRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5 text-[13px]">
-      <span style={{ color: '#8f9aa9' }}>{label}</span>
-      <span className="max-w-[62%] truncate text-right" style={{ color: '#15233a' }}>{value}</span>
-    </div>
-  )
-}
-
-function StatCard({ label, value, total, pct, color, bg, icon, active, onClick }: {
-  label: string; value: number; total: number; pct: string; color: string; bg: string; icon: ReactNode; active?: boolean; onClick?: () => void
-}) {
-  return (
-    <div
-      className="flex cursor-pointer items-center justify-between rounded-lg bg-white px-4 py-3 transition-shadow hover:shadow-md"
-      style={{ border: `1px solid ${active ? color : '#e6ebf1'}` }}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-lg text-lg" style={{ background: bg, color }}>{icon}</span>
-        <div>
-          <div className="text-xs" style={{ color: '#8f9aa9' }}>{label}</div>
-          <div className="text-xl font-bold leading-6" style={{ color: '#15233a' }}>
-            {value}
-            <span className="ml-1 text-xs font-normal" style={{ color: '#8f9aa9' }}>/ {total}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs" style={{ color: '#8f9aa9' }}>{pct}</span>
-        <RightOutlined style={{ color: '#c9d2de', fontSize: 12 }} />
-      </div>
+      <span style={{ color: 'var(--ks-muted)' }}>{label}</span>
+      <span className="max-w-[62%] truncate text-right" style={{ color: 'var(--ks-ink)' }}>{value}</span>
     </div>
   )
 }
@@ -677,26 +651,26 @@ export default function ClusterRolesPage() {
       {/* 左：主区 */}
       <div className="min-w-0 flex-1 space-y-4">
         {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 px-5 py-3.5 text-sm text-red-700">
             {error} <Button size="small" onClick={refresh}>重试</Button>
           </div>
         )}
 
         {/* 页头横幅 */}
         <div
-          className="relative flex items-center justify-between overflow-hidden rounded-lg px-6 py-5"
-          style={{ background: 'linear-gradient(90deg, #f2f7ff 0%, #e9f1fd 60%, #eef4fe 100%)' }}
+          className="ks-panel relative flex items-center justify-between overflow-hidden px-6 py-5"
+
         >
           <div className="flex items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-xl text-2xl text-white"
-              style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}
+              style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}
             >
               <SafetyCertificateOutlined />
             </span>
             <div>
-              <div className="text-xl font-bold" style={{ color: '#15233a' }}>集群角色</div>
-              <div className="mt-1 text-[13px]" style={{ color: '#6b7a92' }}>
+              <div className="text-xl font-bold" style={{ color: 'var(--ks-ink)' }}>集群角色</div>
+              <div className="mt-1 text-[13px]" style={{ color: 'var(--ks-muted)' }}>
                 当前集群：{cluster || '未选择'}。角色按 API 组 / 资源 / 操作授予权限，作用范围覆盖整个集群。
               </div>
             </div>
@@ -708,16 +682,16 @@ export default function ClusterRolesPage() {
 
         {/* 统计卡 */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="角色总数" value={all.length} total={all.length} pct="100%" color="#2f6fed" bg="#e8f1ff" icon={<SafetyCertificateOutlined />} active={!stat} onClick={() => setStat(undefined)} />
-          <StatCard label="内置角色" value={counts.builtin} total={all.length} pct={pctOf(counts.builtin, all.length)} color="#27a06a" bg="#e6f7ef" icon={<SafetyCertificateOutlined />} active={stat === 'builtin'} onClick={() => setStat(stat === 'builtin' ? undefined : 'builtin')} />
-          <StatCard label="自定义角色" value={counts.custom} total={all.length} pct={pctOf(counts.custom, all.length)} color="#7c5cff" bg="#f0ebff" icon={<EditOutlined />} active={stat === 'custom'} onClick={() => setStat(stat === 'custom' ? undefined : 'custom')} />
-          <StatCard label="空规则" value={counts.empty} total={all.length} pct={pctOf(counts.empty, all.length)} color="#f5a623" bg="#fff4e5" icon={<ExclamationCircleOutlined />} active={stat === 'empty'} onClick={() => setStat(stat === 'empty' ? undefined : 'empty')} />
+          <StatCard label="角色总数" value={all.length} total={all.length} pct="100%" color="var(--color-brand)" bg="var(--ks-brand-bg)" icon={<SafetyCertificateOutlined />} active={!stat} onClick={() => setStat(undefined)} />
+          <StatCard label="内置角色" value={counts.builtin} total={all.length} pct={pctOf(counts.builtin, all.length)} color="var(--ks-ok-text)" bg="var(--ks-ok-bg)" icon={<SafetyCertificateOutlined />} active={stat === 'builtin'} onClick={() => setStat(stat === 'builtin' ? undefined : 'builtin')} />
+          <StatCard label="自定义角色" value={counts.custom} total={all.length} pct={pctOf(counts.custom, all.length)} color="var(--ks-violet)" bg="var(--ks-violet-bg)" icon={<EditOutlined />} active={stat === 'custom'} onClick={() => setStat(stat === 'custom' ? undefined : 'custom')} />
+          <StatCard label="空规则" value={counts.empty} total={all.length} pct={pctOf(counts.empty, all.length)} color="var(--color-warn)" bg="var(--ks-warn-bg)" icon={<ExclamationCircleOutlined />} active={stat === 'empty'} onClick={() => setStat(stat === 'empty' ? undefined : 'empty')} />
         </div>
 
         {/* 表格卡片 */}
-        <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
+        <div className="ks-panel">
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <span className="text-[13px]" style={{ color: '#8f9aa9' }}>类型</span>
+            <span className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>类型</span>
             <Select allowClear placeholder="全部" style={{ width: 120 }} value={stat} onChange={setStat} suffixIcon={null} variant="filled"
               options={[{ label: '内置角色', value: 'builtin' }, { label: '自定义角色', value: 'custom' }, { label: '空规则', value: 'empty' }]} />
             <span className="ml-auto flex items-center gap-2">
@@ -748,14 +722,14 @@ export default function ClusterRolesPage() {
                   const builtin = isBuiltIn(o)
                   return (
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-md text-base" style={{ background: builtin ? '#e6f7ef' : '#e8f1ff', color: builtin ? '#27a06a' : '#2f6fed' }}>
+                      <span className="grid size-8 shrink-0 place-items-center rounded-md text-base" style={{ background: builtin ? 'var(--ks-ok-bg)' : 'var(--ks-brand-bg)', color: builtin ? 'var(--ks-ok-text)' : 'var(--color-brand)' }}>
                         <SafetyCertificateOutlined />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium" style={{ color: '#15233a' }} title={nameOf(o)}>{nameOf(o)}</div>
-                        <div className="truncate text-xs" style={{ color: '#8f9aa9' }}>{descOf(o) || aliasOf(o) || (builtin ? 'Kubernetes 默认角色' : '在此控制台创建')}</div>
+                        <div className="truncate font-medium" style={{ color: 'var(--ks-ink)' }} title={nameOf(o)}>{nameOf(o)}</div>
+                        <div className="truncate text-xs" style={{ color: 'var(--ks-muted)' }}>{descOf(o) || aliasOf(o) || (builtin ? 'Kubernetes 默认角色' : '在此控制台创建')}</div>
                       </div>
-                      <span className="inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-[11px]" style={{ background: builtin ? '#e6f7ef' : '#eef1f5', color: builtin ? '#27a06a' : '#5b6a80' }}>
+                      <span className="inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-[11px]" style={{ background: builtin ? 'var(--ks-ok-bg)' : 'var(--ks-fill)', color: builtin ? 'var(--ks-ok-text)' : 'var(--ks-body)' }}>
                         {builtin ? '内置' : '自定义'}
                       </span>
                     </div>
@@ -768,7 +742,7 @@ export default function ClusterRolesPage() {
                 sorter: (a, b) => rulesOf(a).length - rulesOf(b).length,
                 render: (_, o) => {
                   const n = rulesOf(o).length
-                  return <span style={{ color: n ? '#15233a' : '#b3bdcc' }}>{n}</span>
+                  return <span style={{ color: n ? 'var(--ks-ink)' : 'var(--ks-faint)' }}>{n}</span>
                 },
               },
               { title: '创建时间', width: 170, render: (_, o) => datetime(o.metadata?.creationTimestamp) },
@@ -795,14 +769,14 @@ export default function ClusterRolesPage() {
       <div className="hidden w-[300px] shrink-0 space-y-4 xl:block">
         {active ? (
           <>
-            <div className="rounded-lg bg-white" style={{ border: '1px solid #e6ebf1' }}>
-              <div className="flex items-center gap-3 px-4" style={{ height: 58, borderBottom: '1px solid #eef1f5' }}>
-                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: 'linear-gradient(135deg, #5ea0ff, #1668dc)' }}>
+            <div className="ks-panel">
+              <div className="flex items-center gap-3 px-5 pb-2 pt-4" style={{ minHeight: 46 }}>
+                <span className="grid size-9 place-items-center rounded-lg text-base text-white" style={{ background: "var(--ks-brand-bg)", color: "var(--color-brand)" }}>
                   <SafetyCertificateOutlined />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: '#15233a' }} title={nameOf(active)}>{nameOf(active)}</span>
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={isBuiltIn(active) ? { background: '#e6f7ef', color: '#27a06a' } : { background: '#e8f1ff', color: '#2f6fed' }}>
-                  <span className="size-[6px] rounded-full" style={{ background: isBuiltIn(active) ? TONE_COLOR.ok : '#2f6fed' }} />
+                <span className="min-w-0 flex-1 truncate text-base font-bold" style={{ color: 'var(--ks-ink)' }} title={nameOf(active)}>{nameOf(active)}</span>
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs" style={isBuiltIn(active) ? { background: 'var(--ks-ok-bg)', color: 'var(--ks-ok-text)' } : { background: 'var(--ks-brand-bg)', color: 'var(--color-brand)' }}>
+                  <span className="size-[6px] rounded-full" style={{ background: isBuiltIn(active) ? TONE_COLOR.ok : 'var(--color-brand)' }} />
                   {isBuiltIn(active) ? '内置' : '自定义'}
                 </span>
               </div>
@@ -818,8 +792,8 @@ export default function ClusterRolesPage() {
               {rulesOf(active).length ? (
                 <div className="space-y-2.5">
                   {rulesOf(active).slice(0, 4).map((r, i) => (
-                    <div key={i} className="text-[12px] leading-5" style={{ color: '#5b6a80' }}>
-                      <div className="truncate font-medium" style={{ color: '#15233a' }}>
+                    <div key={i} className="text-[12px] leading-5" style={{ color: 'var(--ks-body)' }}>
+                      <div className="truncate font-medium" style={{ color: 'var(--ks-ink)' }}>
                         {(r.resources ?? []).join(', ') || (r.nonResourceURLs ?? []).join(', ') || '-'}
                       </div>
                       <div className="truncate">
@@ -828,22 +802,22 @@ export default function ClusterRolesPage() {
                     </div>
                   ))}
                   {rulesOf(active).length > 4 && (
-                    <div className="text-xs" style={{ color: '#8f9aa9' }}>共 {rulesOf(active).length} 条规则，点「完整详情」查看全部。</div>
+                    <div className="text-xs" style={{ color: 'var(--ks-muted)' }}>共 {rulesOf(active).length} 条规则，点「完整详情」查看全部。</div>
                   )}
                 </div>
               ) : (
-                <div className="text-[13px]" style={{ color: '#8f9aa9' }}>该角色没有显式规则（可能为聚合角色）。</div>
+                <div className="text-[13px]" style={{ color: 'var(--ks-muted)' }}>该角色没有显式规则（可能为聚合角色）。</div>
               )}
             </Panel>
           </>
         ) : (
-          <div className="rounded-lg bg-white px-4 py-6 text-center text-[13px]" style={{ border: '1px solid #e6ebf1', color: '#8f9aa9' }}>
+          <div className="ks-panel px-4 py-6 text-center text-[13px]" style={{ color: 'var(--ks-muted)' }}>
             {all.length ? '点击左侧角色行查看详情。' : '当前集群没有可读取的集群角色。'}
           </div>
         )}
 
         <Panel title="使用小贴士">
-          <div className="text-[13px] leading-6" style={{ color: '#5b6a80' }}>
+          <div className="text-[13px] leading-6" style={{ color: 'var(--ks-body)' }}>
             内置角色通常带 <span className="kbd-mono">system:</span> 前缀或 bootstrapping 标注，用于 Kubernetes 默认授权；在此页面创建的记为自定义角色。「空规则」角色不授予任何权限，请确认是否为聚合角色。
           </div>
         </Panel>
