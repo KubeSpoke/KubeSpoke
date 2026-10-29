@@ -26,11 +26,18 @@ namespace KubeSpoke.Agent.Connecting
     internal class SignalRConnection
     {
         HubConnection? connection;
+
+        /// <summary>
+        /// 推流专用的第二根连接，只用来送 ChannelReader（日志、终端、文件字节）。
+        /// 和 RPC 共用一根 WebSocket 时，大流量帧会把回执挤得一条都发不出去。
+        /// </summary>
+        HubConnection? streamConnection;
+
         AgentServiceConfigProvider agentServiceConfigProvider;
         ILogger<SignalRConnection> logger;
         RPCRequestHandler requestHandler;
 
-        /// <summary>0=没有重建在跑，1=有。Closed、服务端重连令、回执投递失败三个入口都会撞进来，只留一个循环</summary>
+        /// <summary>0=没有重建在跑，1=有。两根连接的 Closed、服务端重连令、回执投递失败都会撞进来，只留一个循环</summary>
         int reconnecting;
 
         /// <summary>Start 传进来的停机令牌，重建循环要用它判断「该退了」</summary>
@@ -53,31 +60,12 @@ namespace KubeSpoke.Agent.Connecting
             if (conf == null)
                 throw new ArgumentNullException(nameof(conf));
 
-            connection = new HubConnectionBuilder()
-              .WithUrl(conf.ServerAddr, options =>
-              {
-                  //options.HttpMessageHandlerFactory = h =>
-                  //{
-                  //    var handler = new SocketsHttpHandler()
-                  //    {
-                  //        ResponseHeaderEncodingSelector = delegate { return Encoding.UTF8; },
-                  //        RequestHeaderEncodingSelector = delegate { return Encoding.UTF8; }
-                  //    };
-                  //    return handler;
-                  //};
+            connection = BuildConnection(conf, conf.ServerAddr);
 
-                  // 名字不是aiisc编码会报错
-                  //options.Headers.Add(ConstString.HEADER_CLUSTER_NAME, conf.ClusterName);
-                  options.Headers.Add(ConstString.HEADER_CLUSTER_ID, conf.ClusterUUID);
-                  options.Headers.Add(ConstString.HEADER_CLUSTER_SECRET, conf.ClusterSecret);
-              })
-              //.WithAutomaticReconnect() // 自动重连4次，失败后触发 Closed
-              .ConfigureLogging(logging =>
-              {
-                  logging.SetMinimumLevel(LogLevel.Information);
-                  logging.AddConsole();
-              })
-              .Build();
+            // 推流单开一根连接：日志/终端/文件字节这些帧一旦跑起来，同一条 WebSocket 的发送路径
+            // 会被它们占满，排在后面的 RPC 回执一条都发不出去（实测下载期间服务端零回执、全体满窗超时）。
+            // 服务端按 role=stream 认出这根连接，不登记进在线表，所以它永远只出不进。
+            streamConnection = BuildConnection(conf, StreamAddr(conf.ServerAddr));
 
             connection.Closed += (ex) =>
             {
@@ -85,6 +73,14 @@ namespace KubeSpoke.Agent.Connecting
                 // 拿 .Wait() 摁住它，后面排队的 Closed/停止事件全堵死，多层重连就是这么叠出来的。
                 logger.LogError(ex, "[SignalR连接关闭] 5s后重试");
                 _ = ReconnectAsync("连接关闭");
+                return Task.CompletedTask;
+            };
+
+            // 推流连接掉了同样要整体重建：两根连接共用一套重连闸门，避免出现一半新一半旧
+            streamConnection.Closed += (ex) =>
+            {
+                logger.LogError(ex, "[推流连接关闭] 5s后重试");
+                _ = ReconnectAsync("推流连接关闭");
                 return Task.CompletedTask;
             };
 
@@ -138,6 +134,37 @@ namespace KubeSpoke.Agent.Connecting
         }
 
         JsonSerializerOptions serializerOptions = new JsonSerializerOptions() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+
+        /// <summary>两根连接除了 URL 之外完全一致，所以共用同一个构造路径</summary>
+        HubConnection BuildConnection(AgentServiceConfig conf, string url) => new HubConnectionBuilder()
+              .WithUrl(url, options =>
+              {
+                  //options.HttpMessageHandlerFactory = h =>
+                  //{
+                  //    var handler = new SocketsHttpHandler()
+                  //    {
+                  //        ResponseHeaderEncodingSelector = delegate { return Encoding.UTF8; },
+                  //        RequestHeaderEncodingSelector = delegate { return Encoding.UTF8; }
+                  //    };
+                  //    return handler;
+                  //};
+
+                  // 名字不是aiisc编码会报错
+                  //options.Headers.Add(ConstString.HEADER_CLUSTER_NAME, conf.ClusterName);
+                  options.Headers.Add(ConstString.HEADER_CLUSTER_ID, conf.ClusterUUID);
+                  options.Headers.Add(ConstString.HEADER_CLUSTER_SECRET, conf.ClusterSecret);
+              })
+              //.WithAutomaticReconnect() // 自动重连4次，失败后触发 Closed
+              .ConfigureLogging(logging =>
+              {
+                  logging.SetMinimumLevel(LogLevel.Information);
+                  logging.AddConsole();
+              })
+              .Build();
+
+        /// <summary>安装指令给的地址已经带了 uuid 和 name 两个查询参数，这里只追加角色标记</summary>
+        static string StreamAddr(string serverAddr) =>
+            serverAddr.Contains('?') ? $"{serverAddr}&role=stream" : $"{serverAddr}?role=stream";
 
         /// <summary>键盘输入投进容器 stdin。写不进去（shell 已退）就顺手收掉这路会话，别让浏览器对着死面板打字。</summary>
         private void ExecInput(Guid sessionId, string base64)
@@ -194,7 +221,7 @@ namespace KubeSpoke.Agent.Connecting
 
                 if (res is ChannelReader<string>)
                 {
-                    await connection!.InvokeAsync("RpcCallStreamBack", message.RequestId, res);
+                    await streamConnection!.InvokeAsync("RpcCallStreamBack", message.RequestId, res);
                 }
                 else
                 {
@@ -275,8 +302,8 @@ namespace KubeSpoke.Agent.Connecting
                 : ex.Message;
 
         /// <summary>
-        /// 唯一的重建入口，同一时刻只允许一个循环在跑。
-        /// 三个来源会同时撞进来：连接自己报 Closed、服务端下了重连令、回执 SendAsync 直接失败。
+        /// 唯一的重建入口，同一时刻只允许一个循环在跑，一次把两根连接一起换掉。
+        /// 四个来源会同时撞进来：连接自己报 Closed、推流连接报 Closed、服务端下了重连令、回执 SendAsync 直接失败。
         /// 叠两层循环的后果是两个人同时对着同一根连接 StartAsync，后者必抛异常再各睡 5s，日志里就是一串没头没尾的失败。
         /// </summary>
         async Task ReconnectAsync(string reason)
@@ -290,16 +317,19 @@ namespace KubeSpoke.Agent.Connecting
             try
             {
                 // 服务端下这道令时连接还是 Connected 状态（下行明明通着），不先 Stop 就 StartAsync 只会抛
-                if (connection!.State != HubConnectionState.Disconnected)
+                foreach (var conn in new[] { connection, streamConnection })
                 {
-                    logger.LogInformation($"[停掉旧连接] 来自{reason}");
-                    try
+                    if (conn!.State != HubConnectionState.Disconnected)
                     {
-                        await connection.StopAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogDebug(ex, "[停旧连接失败，直接重试启动]");
+                        logger.LogInformation($"[停掉旧连接] {(conn == streamConnection ? "推流" : "RPC")} 来自{reason}");
+                        try
+                        {
+                            await conn.StopAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug(ex, "[停旧连接失败，直接重试启动]");
+                        }
                     }
                 }
 
@@ -323,10 +353,14 @@ namespace KubeSpoke.Agent.Connecting
             {
                 try
                 {
-                    // 开始连接
+                    // 开始连接：已经通着的那根跳过，重连时不至于对着 Connected 的连接再 StartAsync 一次
                     logger.LogInformation("[开始连接]");
-                    await connection.StartAsync(token);
+                    if (connection.State == HubConnectionState.Disconnected)
+                        await connection.StartAsync(token);
+                    if (streamConnection!.State == HubConnectionState.Disconnected)
+                        await streamConnection.StartAsync(token);
                     Debug.Assert(connection.State == HubConnectionState.Connected);
+                    Debug.Assert(streamConnection.State == HubConnectionState.Connected);
 
                     logger.LogInformation("[连接成功]");
                     return true;
@@ -340,7 +374,6 @@ namespace KubeSpoke.Agent.Connecting
                 {
                     logger.LogInformation($"[连接失败] {ex.Message} trying again in 5000 ms");
 
-                    Debug.Assert(connection.State == HubConnectionState.Disconnected);
                     await Task.Delay(5000);
                 }
             }
@@ -348,10 +381,13 @@ namespace KubeSpoke.Agent.Connecting
 
         internal async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (connection != null)
+            foreach (var conn in new[] { connection, streamConnection })
             {
-                await connection.StopAsync();
-                await connection.DisposeAsync();
+                if (conn != null)
+                {
+                    await conn.StopAsync();
+                    await conn.DisposeAsync();
+                }
             }
         }
     }

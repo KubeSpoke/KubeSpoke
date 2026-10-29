@@ -9,6 +9,10 @@ using Serilog.Events;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+// 每条在途 RPC 都同步等 agent 回执，要占住一条线程池线程。默认下限只有核数，
+// 超了之后 .NET 每 500ms 才补 1~2 条，并发一高就是整片的 500ms 台阶（实测 128 路并发七成超时）
+ThreadPool.GetMinThreads(out _, out int minIo);
+ThreadPool.SetMinThreads(Math.Max(128, Environment.ProcessorCount * 16), minIo);
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;

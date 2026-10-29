@@ -30,6 +30,12 @@ namespace KubeSpoke.Server.Hubs
             }
         }
 
+        /// <summary>
+        /// agent 的第二根连接（只送日志/终端/文件字节这类大流量帧）。
+        /// 它不进在线表：RPC 必须只投到那根控制连接上，否则同一个集群会有两个投递目标。
+        /// </summary>
+        bool IsStreamConnection => Context.GetHttpContext()?.Request.Query["role"].ToString() == "stream";
+
         string ClusterName
         {
             get
@@ -99,6 +105,12 @@ namespace KubeSpoke.Server.Hubs
 
         public override Task OnConnectedAsync()
         {
+            if (IsStreamConnection)
+            {
+                logger.LogInformation($"[集群推流连接]：{ClusterName} {IdentityName} ConnectionId={Context.ConnectionId}");
+                return base.OnConnectedAsync();
+            }
+
             if (IdentityName != null)
             {
                 logger.LogInformation($"[集群连接]：{ClusterName} {IdentityName} SignalRUserId={Context.UserIdentifier ?? "<null>"} ConnectionId={Context.ConnectionId}");
@@ -127,6 +139,12 @@ namespace KubeSpoke.Server.Hubs
 
         public override Task OnDisconnectedAsync(Exception? exception)
         {
+            if (IsStreamConnection)
+            {
+                logger.LogInformation($"[集群推流断开]：{ClusterName} {IdentityName}");
+                return base.OnDisconnectedAsync(exception);
+            }
+
             if (IdentityName != null)
             {
                 logger.LogInformation($"[集群断开]：{ClusterName} {IdentityName}");

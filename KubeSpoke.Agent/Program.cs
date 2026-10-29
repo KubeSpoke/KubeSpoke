@@ -20,6 +20,11 @@ namespace KubeSpoke.Agent
     {
         public static void Main(string[] args)
         {
+            // 每条在途 RPC 都在同步等 k8s 返回，要占住一条线程池线程。默认下限只有核数，
+            // 超了之后 .NET 每 500ms 才补 1~2 条，并发一高就是整片的 500ms 台阶
+            ThreadPool.GetMinThreads(out _, out int minIo);
+            ThreadPool.SetMinThreads(Math.Max(128, Environment.ProcessorCount * 16), minIo);
+
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                 .Enrich.FromLogContext()

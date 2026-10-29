@@ -66,8 +66,19 @@ namespace KubeSpoke.Server.Hubs
             RPCResponse res;
             try
             {
-                // 不 await 的话投递失败完全看不见
-                agent.SendAsync(ConstString.AGENT_RECIVE_METHOD_RPC, invokeInfo).GetAwaiter().GetResult();
+                // 不 await 的话投递失败完全看不见。
+                // 投递本身也要有上限：WebSocket 上行卡住时 SendAsync 永远不返回，这条请求线程就永久挂死，
+                // 比超时更难查，所以只给它 waitSec 里的一小截，剩下的大头留给等回执。
+                var sendSec = Math.Max(1, Math.Min(2, waitSec));
+                try
+                {
+                    agent.SendAsync(ConstString.AGENT_RECIVE_METHOD_RPC, invokeInfo).WaitAsync(TimeSpan.FromSeconds(sendSec)).GetAwaiter().GetResult();
+                }
+                catch (TimeoutException)
+                {
+                    // 请求根本没出去，不该冒充成「agent 没回执」——两者后续的查法完全不同
+                    throw new Exception($"投递失败：集群 {name} 连接 {connectionId} 的上行在 {sendSec}s 内没写出 {targetMethod.Name}");
+                }
 
                 completionSource.Task.WaitAsync(TimeSpan.FromSeconds(waitSec)).GetAwaiter().GetResult();
                 res = completionSource.Task.Result;
