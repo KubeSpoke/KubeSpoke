@@ -103,6 +103,13 @@ namespace KubeSpoke.Server.Hubs
             }
         }
 
+        /// <summary>
+        /// agent 用它确认服务端认得 role=stream 这套分工（0.5.4 起有这个方法）。
+        /// 老服务端没这个方法，agent 调用失败就当不支持，退回单连接——否则老服务端会把第二根连接
+        /// 当成该集群的最新连接顶掉登记，RPC 和终端按键全投到一根没挂 handler 的连接上。
+        /// </summary>
+        public Task<bool> SupportsStreamRole() => Task.FromResult(true);
+
         public override Task OnConnectedAsync()
         {
             if (IsStreamConnection)

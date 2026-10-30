@@ -33,6 +33,9 @@ namespace KubeSpoke.Agent.Connecting
         /// </summary>
         HubConnection? streamConnection;
 
+        /// <summary>服务端认不认 role=stream（每次连上重新问一遍，服务端可能已经升级）。不认就一根连接都不多开</summary>
+        bool serverSupportsStreamRole;
+
         AgentServiceConfigProvider agentServiceConfigProvider;
         ILogger<SignalRConnection> logger;
         RPCRequestHandler requestHandler;
@@ -65,6 +68,7 @@ namespace KubeSpoke.Agent.Connecting
             // 推流单开一根连接：日志/终端/文件字节这些帧一旦跑起来，同一条 WebSocket 的发送路径
             // 会被它们占满，排在后面的 RPC 回执一条都发不出去（实测下载期间服务端零回执、全体满窗超时）。
             // 服务端按 role=stream 认出这根连接，不登记进在线表，所以它永远只出不进。
+            // 这根连接要等 AskStreamRoleSupportAsync 问过服务端才真的启动，老服务端不认角色。
             streamConnection = BuildConnection(conf, StreamAddr(conf.ServerAddr));
 
             connection.Closed += (ex) =>
@@ -166,6 +170,26 @@ namespace KubeSpoke.Agent.Connecting
         static string StreamAddr(string serverAddr) =>
             serverAddr.Contains('?') ? $"{serverAddr}&role=stream" : $"{serverAddr}?role=stream";
 
+        /// <summary>
+        /// 问一句服务端认不认 role=stream。老服务端没有 SupportsStreamRole 这个方法，调用直接失败，
+        /// 那不是故障，退回 0.5.2 那套单连接就行——0.5.3 就是因为没问这一句，把第二根连接对老服务端也开了，
+        /// 老服务端按 Identity 登记最后连上的那根，于是 RPC、终端按键、日志关闭全投到没挂 handler 的连接上。
+        /// </summary>
+        async Task<bool> AskStreamRoleSupportAsync(CancellationToken token)
+        {
+            try
+            {
+                serverSupportsStreamRole = await connection!.InvokeAsync<bool>("SupportsStreamRole", token);
+            }
+            catch (Exception ex) when (!token.IsCancellationRequested)
+            {
+                logger.LogWarning($"[服务端不认推流角色] {Describe(ex)}，本次只用一根连接");
+                serverSupportsStreamRole = false;
+            }
+
+            return serverSupportsStreamRole;
+        }
+
         /// <summary>键盘输入投进容器 stdin。写不进去（shell 已退）就顺手收掉这路会话，别让浏览器对着死面板打字。</summary>
         private void ExecInput(Guid sessionId, string base64)
         {
@@ -221,7 +245,9 @@ namespace KubeSpoke.Agent.Connecting
 
                 if (res is ChannelReader<string>)
                 {
-                    await streamConnection!.InvokeAsync("RpcCallStreamBack", message.RequestId, res);
+                    // 服务端不认推流角色时第二根根本没开，退回主连接就是 0.5.2 的老行为
+                    var sender = streamConnection is { State: HubConnectionState.Connected } ? streamConnection : connection;
+                    await sender!.InvokeAsync("RpcCallStreamBack", message.RequestId, res);
                 }
                 else
                 {
@@ -357,10 +383,14 @@ namespace KubeSpoke.Agent.Connecting
                     logger.LogInformation("[开始连接]");
                     if (connection.State == HubConnectionState.Disconnected)
                         await connection.StartAsync(token);
-                    if (streamConnection!.State == HubConnectionState.Disconnected)
+
+                    // 第二根要先问过服务端才开：老服务端不看 role，会把这根当成该集群的最新连接登记进去，
+                    // 顶掉控制连接，之后所有下行调用都投到这根没挂 handler 的连接上
+                    if (streamConnection!.State == HubConnectionState.Disconnected && await AskStreamRoleSupportAsync(token))
                         await streamConnection.StartAsync(token);
+
                     Debug.Assert(connection.State == HubConnectionState.Connected);
-                    Debug.Assert(streamConnection.State == HubConnectionState.Connected);
+                    Debug.Assert(!serverSupportsStreamRole || streamConnection.State == HubConnectionState.Connected);
 
                     logger.LogInformation("[连接成功]");
                     return true;
